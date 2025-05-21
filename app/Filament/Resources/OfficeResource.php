@@ -32,6 +32,9 @@ class OfficeResource extends Resource
                 Forms\Components\TextInput::make('longitude')
                     ->required()
                     ->numeric(),
+                Forms\Components\TextInput::make('radius')
+                    ->required()
+                    ->numeric(),
             ]);
     }
 
@@ -45,6 +48,9 @@ class OfficeResource extends Resource
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('longitude')
+                    ->numeric()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('radius')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
