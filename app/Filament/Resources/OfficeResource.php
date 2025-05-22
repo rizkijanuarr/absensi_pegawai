@@ -13,52 +13,119 @@ use Filament\Tables\Table;
 use Humaidem\FilamentMapPicker\Fields\OSMMap;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Cheesegrits\FilamentGoogleMaps\Fields\Map;
 
 class OfficeResource extends Resource
 {
     protected static ?string $model = Office::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
+
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                OSMMap::make('location')
-                    ->label('Location')
-                    ->showMarker()
-                    ->draggable()
-                    ->showZoomControl(true)
-                    ->afterStateHydrated(function (Forms\Get $get, Forms\Set $set, $record) {
-                        if ($record) {
-                            $latitude = $record->latitude;
-                            $longitude = $record->longitude;
+                Forms\Components\Group::make()
+                    ->schema([
+                        // Section kiri - Map dan koordinat
+                        Forms\Components\Section::make('Location')
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(255),
 
-                            if ($latitude && $longitude) {
-                                $set('location', ['lat' => $latitude, 'lng' => $longitude]);
-                            }
+                                Map::make('location')
+                                    ->mapControls([
+                                        'mapTypeControl'    => true,
+                                        'scaleControl'      => true,
+                                        'streetViewControl' => true,
+                                        'rotateControl'     => true,
+                                        'fullscreenControl' => true,
+                                        'searchBoxControl'  => false,
+                                        'zoomControl'       => false,
+                                    ])
+                                    ->height(fn () => '400px')
+                                    ->defaultZoom(15)
+                                    ->autocomplete('full_address')
+                                    ->autocompleteReverse(true)
+                                    ->reverseGeocode([
+                                        'street_number'   => '%n',
+                                        'route'           => '%S',
+                                        'locality'        => '%L',
+                                        'administrative_area_level_1' => '%A1',
+                                        'country'         => '%C',
+                                        'postal_code'     => '%z',
+                                    ])
+                                    ->debug()
+                                    ->defaultLocation([0, 0])
+                                    ->draggable()
+                                    ->clickable(true)
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                        if ($state && is_array($state)) {
+                                            if (isset($state['lat'])) {
+                                                $set('latitude', $state['lat']);
+                                            }
+                                            if (isset($state['lng'])) {
+                                                $set('longitude', $state['lng']);
+                                            }
+                                        }
+                                    })
+                                    ->afterStateHydrated(function (Forms\Set $set, $state, $record) {
+                                        if ($record && $record->latitude && $record->longitude) {
+                                            $set('location', [
+                                                'lat' => $record->latitude,
+                                                'lng' => $record->longitude,
+                                            ]);
+                                        }
+                                    }),
 
-                            // dd($latitude, $longitude); // opsional, hanya untuk debug
-                        }
-                    })
+                                // Latitude dan Longitude bersebelahan
+                                Forms\Components\Group::make()
+                                    ->schema([
+                                        Forms\Components\TextInput::make('latitude')
+                                            ->required()
+                                            ->numeric()
+                                            ->reactive()
+                                            ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
+                                                $lng = $get('longitude');
+                                                if ($state !== null && $lng !== null) {
+                                                    $set('location', ['lat' => $state, 'lng' => $lng]);
+                                                }
+                                            })
+                                            ->disabled(),
 
-                    ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
-                        $set('latitude', $state['lat']);
-                        $set('longitude', $state['lng']);
-                    })
-                    ->tilesUrl('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'),
-                Forms\Components\TextInput::make('latitude')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('longitude')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('radius')
-                    ->required()
-                    ->numeric(),
+                                        Forms\Components\TextInput::make('longitude')
+                                            ->required()
+                                            ->numeric()
+                                            ->reactive()
+                                            ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
+                                                $lat = $get('latitude');
+                                                if ($state !== null && $lat !== null) {
+                                                    $set('location', ['lat' => $lat, 'lng' => $state]);
+                                                }
+                                            })
+                                            ->disabled(),
+                                    ])
+                                    ->columns(2), // Membuat latitude dan longitude bersebelahan
+                            ])
+                            ->columnSpan(2), // Section kiri mengambil 2/3 lebar
+
+                        // Section kanan - Radius
+                        Forms\Components\Section::make('Settings')
+                            ->schema([
+                                Forms\Components\TextInput::make('radius')
+                                    ->required()
+                                    ->numeric()
+                                    ->suffix('km')
+                                    ->helperText('Radius coverage area in kilometers'),
+                            ])
+                            ->columnSpan(1), // Section kanan mengambil 1/3 lebar
+                    ])
+                    ->columns(3) // Total 3 kolom untuk layout side-by-side
+                    ->columnSpanFull(), // Memastikan group mengambil full width
             ]);
     }
 

@@ -18,32 +18,53 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-s-user-group';
+
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\DateTimePicker::make('email_verified_at'),
-                Forms\Components\TextInput::make('password')
-                    ->password()
-                    ->maxLength(255)
-                    ->dehydrateStateUsing(fn ($state) => Hash::make($state))
-                    ->dehydrated(fn ($state) => filled($state))
-                    ->required(fn (string $context): bool => $context === 'create'),
-                Forms\Components\Select::make('roles')
-                    ->relationship('roles', 'name')
-                    ->preload()
-                    ->searchable(),
-            ]);
+        return $form->schema([
+            Forms\Components\Group::make()
+                ->schema([
+                    // Bagian kiri: Informasi user
+                    Forms\Components\Section::make('User')
+                        ->schema([
+                            Forms\Components\TextInput::make('name')
+                                ->required()
+                                ->maxLength(255),
+
+                            Forms\Components\TextInput::make('email')
+                                ->email()
+                                ->required()
+                                ->maxLength(255),
+
+                            Forms\Components\Select::make('roles')
+                                ->relationship('roles', 'name')
+                                ->preload()
+                                ->searchable(),
+                        ])
+                        ->columnSpan(2),
+
+                    // Bagian kanan: Pengaturan akun
+                    Forms\Components\Section::make('Settings')
+                        ->schema([
+                            Forms\Components\DateTimePicker::make('email_verified_at'),
+
+                            Forms\Components\TextInput::make('password')
+                                ->password()
+                                ->maxLength(255)
+                                ->dehydrateStateUsing(fn ($state) => Hash::make($state))
+                                ->dehydrated(fn ($state) => filled($state))
+                                ->required(fn (string $context): bool => $context === 'create'),
+                        ])
+                        ->columnSpan(1),
+                ])
+                ->columns(3) // Total 3 kolom: 2/3 kiri dan 1/3 kanan
+                ->columnSpanFull(),
+        ]);
     }
+
 
     public static function table(Table $table): Table
     {

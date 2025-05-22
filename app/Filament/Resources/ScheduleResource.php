@@ -17,22 +17,31 @@ class ScheduleResource extends Resource
 {
     protected static ?string $model = Schedule::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-s-calendar-days';
+
+    protected static ?int $navigationSort = 4;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('user_id')
-                    ->relationship('user', 'name')
-                    ->searchable()
-                    ->required(),
-                Forms\Components\Select::make('shift_id')
-                    ->relationship('shift', 'name')
-                    ->required(),
-                Forms\Components\Select::make('office_id')
-                    ->relationship('office', 'name')
-                    ->required(),
+                Forms\Components\Grid::make(12) 
+                    ->schema([
+                        Forms\Components\Section::make('Schedule')
+                            ->schema([
+                                Forms\Components\Select::make('user_id')
+                                    ->relationship('user', 'name')
+                                    ->searchable()
+                                    ->required(),
+                                Forms\Components\Select::make('shift_id')
+                                    ->relationship('shift', 'name')
+                                    ->required(),
+                                Forms\Components\Select::make('office_id')
+                                    ->relationship('office', 'name')
+                                    ->required(),
+                            ])
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 

@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.2",
         "bezhansalleh/filament-shield": "^3.3",
+        "cheesegrits/filament-google-maps": "^3.0",
         "filament/filament": "^3.3",
         "humaidem/filament-map-picker": "^0.1.5",
         "laravel/framework": "^11.31",
