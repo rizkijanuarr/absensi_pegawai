@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Humaidem\FilamentMapPicker\Fields\OSMMap;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -26,6 +27,29 @@ class OfficeResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
+                OSMMap::make('location')
+                    ->label('Location')
+                    ->showMarker()
+                    ->draggable()
+                    ->showZoomControl(true)
+                    ->afterStateHydrated(function (Forms\Get $get, Forms\Set $set, $record) {
+                        if ($record) {
+                            $latitude = $record->latitude;
+                            $longitude = $record->longitude;
+
+                            if ($latitude && $longitude) {
+                                $set('location', ['lat' => $latitude, 'lng' => $longitude]);
+                            }
+
+                            // dd($latitude, $longitude); // opsional, hanya untuk debug
+                        }
+                    })
+
+                    ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
+                        $set('latitude', $state['lat']);
+                        $set('longitude', $state['lng']);
+                    })
+                    ->tilesUrl('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'),
                 Forms\Components\TextInput::make('latitude')
                     ->required()
                     ->numeric(),
@@ -37,6 +61,7 @@ class OfficeResource extends Resource
                     ->numeric(),
             ]);
     }
+
 
     public static function table(Table $table): Table
     {
