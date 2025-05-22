@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Auth;
 
 class ScheduleResource extends Resource
 {
@@ -39,6 +40,7 @@ class ScheduleResource extends Resource
                                 Forms\Components\Select::make('office_id')
                                     ->relationship('office', 'name')
                                     ->required(),
+                                Forms\Components\Toggle::make('is_wfa')
                             ])
                             ->columnSpanFull(),
                     ]),
@@ -48,15 +50,28 @@ class ScheduleResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                $is_super_admin = Auth::user()->hasRole('super_admin');
+
+                if (!$is_super_admin) {
+                    $query->where('user_id', Auth::user()->id);
+                }
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
-                    ->numeric()
+                    ->searchable()
+                    ->label('Name')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('user.email')
+                    ->searchable()
+                    ->label('Email')
+                    ->sortable(),
+                Tables\Columns\BooleanColumn::make('is_wfa')
+                    ->label('WFA'),
                 Tables\Columns\TextColumn::make('shift.name')
-                    ->numeric()
+                    ->description(fn (Schedule $record): string => $record->shift->start_time.'-'.$record->shift->end_time)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('office.name')
-                    ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
