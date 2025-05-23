@@ -18,8 +18,10 @@ return new class extends Migration
             $table->double('schedule_longitude');
             $table->time('schedule_start_time');
             $table->time('schedule_end_time');
-            $table->double('latitude');
-            $table->double('longitude');
+            $table->double('start_latitude');
+            $table->double('start_longitude');
+            $table->double('end_latitude')->nullable();
+            $table->double('end_longitude')->nullable();
             $table->time('start_time');
             $table->time('end_time');
             $table->timestamps();

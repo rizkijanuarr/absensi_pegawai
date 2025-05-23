@@ -35,44 +35,11 @@ class OfficeResource extends Resource
                                 Forms\Components\TextInput::make('name')
                                     ->required()
                                     ->maxLength(255),
-
-                                Map::make('location')
-                                    ->mapControls([
-                                        'mapTypeControl'    => true,
-                                        'scaleControl'      => true,
-                                        'streetViewControl' => true,
-                                        'rotateControl'     => true,
-                                        'fullscreenControl' => true,
-                                        'searchBoxControl'  => false,
-                                        'zoomControl'       => false,
-                                    ])
-                                    ->height(fn () => '400px')
-                                    ->defaultZoom(15)
-                                    ->autocomplete('full_address')
-                                    ->autocompleteReverse(true)
-                                    ->reverseGeocode([
-                                        'street_number'   => '%n',
-                                        'route'           => '%S',
-                                        'locality'        => '%L',
-                                        'administrative_area_level_1' => '%A1',
-                                        'country'         => '%C',
-                                        'postal_code'     => '%z',
-                                    ])
-                                    ->debug()
-                                    ->defaultLocation([0, 0])
+                                OSMMap::make('location')
+                                    ->label('Location')
+                                    ->showMarker()
                                     ->draggable()
-                                    ->clickable(true)
-                                    ->reactive()
-                                    ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                        if ($state && is_array($state)) {
-                                            if (isset($state['lat'])) {
-                                                $set('latitude', $state['lat']);
-                                            }
-                                            if (isset($state['lng'])) {
-                                                $set('longitude', $state['lng']);
-                                            }
-                                        }
-                                    })
+                                    ->dehydrated(false) // ⛔ Jangan disimpan ke DB
                                     ->afterStateHydrated(function (Forms\Set $set, $state, $record) {
                                         if ($record && $record->latitude && $record->longitude) {
                                             $set('location', [
@@ -80,7 +47,15 @@ class OfficeResource extends Resource
                                                 'lng' => $record->longitude,
                                             ]);
                                         }
-                                    }),
+                                    })
+                                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                        if (is_array($state)) {
+                                            $set('latitude', $state['lat']);
+                                            $set('longitude', $state['lng']);
+                                        }
+                                    })
+                                    ->tilesUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+                                
 
                                 // Latitude dan Longitude bersebelahan
                                 Forms\Components\Group::make()
@@ -88,26 +63,11 @@ class OfficeResource extends Resource
                                         Forms\Components\TextInput::make('latitude')
                                             ->required()
                                             ->numeric()
-                                            ->reactive()
-                                            ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
-                                                $lng = $get('longitude');
-                                                if ($state !== null && $lng !== null) {
-                                                    $set('location', ['lat' => $state, 'lng' => $lng]);
-                                                }
-                                            })
-                                            ->disabled(),
-
+                                            ->readOnly(),
                                         Forms\Components\TextInput::make('longitude')
                                             ->required()
                                             ->numeric()
-                                            ->reactive()
-                                            ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
-                                                $lat = $get('latitude');
-                                                if ($state !== null && $lat !== null) {
-                                                    $set('location', ['lat' => $lat, 'lng' => $state]);
-                                                }
-                                            })
-                                            ->disabled(),
+                                            ->readOnly(), 
                                     ])
                                     ->columns(2), // Membuat latitude dan longitude bersebelahan
                             ])

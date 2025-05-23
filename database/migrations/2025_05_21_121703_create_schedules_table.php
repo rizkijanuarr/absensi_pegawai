@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->unique()->constrained('users')->cascadeOnDelete();
             $table->foreignId('shift_id')->constrained('shifts')->cascadeOnDelete();
             $table->foreignId('office_id')->constrained('offices')->cascadeOnDelete();
+            $table->boolean('is_wfa')->default(false);
             $table->timestamps();
         });
     }
