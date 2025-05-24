@@ -35,11 +35,12 @@ class OfficeResource extends Resource
                                 Forms\Components\TextInput::make('name')
                                     ->required()
                                     ->maxLength(255),
+                                
                                 OSMMap::make('location')
                                     ->label('Location')
                                     ->showMarker()
                                     ->draggable()
-                                    ->dehydrated(false) // ⛔ Jangan disimpan ke DB
+                                    ->dehydrated(false)
                                     ->afterStateHydrated(function (Forms\Set $set, $state, $record) {
                                         if ($record && $record->latitude && $record->longitude) {
                                             $set('location', [
@@ -54,9 +55,11 @@ class OfficeResource extends Resource
                                             $set('longitude', $state['lng']);
                                         }
                                     })
-                                    ->tilesUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+                                    ->tilesUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+                                    ->extraAttributes([
+                                        'class' => 'custom-styled-map',
+                                    ]),
                                 
-
                                 // Latitude dan Longitude bersebelahan
                                 Forms\Components\Group::make()
                                     ->schema([
@@ -79,8 +82,8 @@ class OfficeResource extends Resource
                                 Forms\Components\TextInput::make('radius')
                                     ->required()
                                     ->numeric()
-                                    ->suffix('km')
-                                    ->helperText('Radius coverage area in kilometers'),
+                                    ->suffix('m')
+                                    ->helperText('Radius coverage area in meters'),
                             ])
                             ->columnSpan(1), // Section kanan mengambil 1/3 lebar
                     ])
@@ -88,7 +91,6 @@ class OfficeResource extends Resource
                     ->columnSpanFull(), // Memastikan group mengambil full width
             ]);
     }
-
 
     public static function table(Table $table): Table
     {
@@ -104,6 +106,7 @@ class OfficeResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('radius')
                     ->numeric()
+                    ->suffix(' m')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

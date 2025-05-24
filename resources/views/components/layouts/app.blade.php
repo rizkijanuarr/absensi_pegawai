@@ -7,6 +7,7 @@
     <title>Absensi Pegawai</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    @stack('styles')
     <style>
         #map {
             height: 400px;
@@ -16,5 +17,6 @@
 </head>
 <body>
     {{ $slot }}
+    @stack('scripts')
 </body>
 </html>

@@ -28,7 +28,7 @@ class BackofficePanelProvider extends PanelProvider
             ->path('backoffice')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Blue,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -36,6 +36,13 @@ class BackofficePanelProvider extends PanelProvider
                 Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
+            ->assets([
+                \Filament\Support\Assets\Css::make('leaflet', 'https://unpkg.com/leaflet/dist/leaflet.css'),
+                \Filament\Support\Assets\Css::make('font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'),
+                \Filament\Support\Assets\Js::make('leaflet', 'https://unpkg.com/leaflet/dist/leaflet.js'),
+                \Filament\Support\Assets\Css::make('custom-maps', asset('css/custom-maps.css')),
+                \Filament\Support\Assets\Js::make('custom-maps', asset('js/custom-maps.js')),
+            ])
             ->widgets([
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,

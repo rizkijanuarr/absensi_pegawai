@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Humaidem\FilamentMapPicker\Fields\OSMMap;
+use Auth;
 
 class AttendanceResource extends Resource
 {
@@ -163,6 +164,13 @@ class AttendanceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+         ->modifyQueryUsing(function (Builder $query) {
+                $is_super_admin = Auth::user()->hasRole('super_admin');
+
+                if (!$is_super_admin) {
+                    $query->where('user_id', Auth::user()->id);
+                }
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tanggal')

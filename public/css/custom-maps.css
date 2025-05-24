@@ -1,0 +1,140 @@
+/* Custom Map Styling for Filament */
+
+/* Map Container Styling */
+.custom-styled-map,
+.fi-fo-field-wrp .leaflet-container,
+.fi-section-content .leaflet-container {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.3s ease-in-out !important;
+}
+
+.custom-styled-map:hover,
+.fi-fo-field-wrp .leaflet-container:hover,
+.fi-section-content .leaflet-container:hover {
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Custom Office Marker */
+.custom-office-marker {
+    background: none !important;
+    border: none !important;
+}
+
+.office-icon {
+    width: 40px !important;
+    height: 40px !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-size: 18px !important;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
+    border: 3px solid white !important;
+    animation: officePulse 2s ease-in-out infinite !important;
+}
+
+@keyframes officePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Popup Custom Styling */
+.leaflet-popup-content-wrapper {
+    border-radius: 12px !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+    border: none !important;
+    overflow: hidden !important;
+}
+
+.leaflet-popup-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+.office-popup {
+    min-width: 200px !important;
+}
+
+.popup-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    padding: 12px 16px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.popup-content {
+    padding: 12px 16px !important;
+    background: white !important;
+}
+
+.info-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 8px !important;
+    font-size: 13px !important;
+    color: #666 !important;
+}
+
+.info-item:last-child {
+    margin-bottom: 0 !important;
+}
+
+.info-item i {
+    color: #3B82F6 !important;
+    width: 14px !important;
+    text-align: center !important;
+}
+
+.leaflet-popup-tip {
+    background: white !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Zoom Control Styling */
+.leaflet-control-zoom a {
+    border-radius: 8px !important;
+    border: none !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+.leaflet-control-zoom a:first-child {
+    border-radius: 8px 8px 0 0 !important;
+}
+
+.leaflet-control-zoom a:last-child {
+    border-radius: 0 0 8px 8px !important;
+}
+
+/* Office Tooltip Styling */
+.office-tooltip {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 8px 16px !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    text-align: center !important;
+    letter-spacing: 0.5px !important;
+    animation: tooltipFloat 2s ease-in-out infinite alternate !important;
+}
+
+.office-tooltip::before {
+    display: none !important;
+}
+
+@keyframes tooltipFloat {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(-5px); }
+} 
