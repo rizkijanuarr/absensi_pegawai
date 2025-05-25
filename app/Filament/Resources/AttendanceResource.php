@@ -21,6 +21,12 @@ class AttendanceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?int $navigationSort = 5;
+
+    use \App\Traits\HasNavigationBadge;
+
+    protected static ?string $navigationGroup = 'Presensi';
+
     public static function form(Form $form): Form
     {
         return $form
@@ -172,21 +178,38 @@ class AttendanceResource extends Resource
                 }
             })
             ->columns([
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Pegawai')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tanggal')
                     ->date()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label('Pegawai')
-                    ->sortable(),
+
+                Tables\Columns\ImageColumn::make('start_attendance_photo')
+                    ->label('Foto Datang')
+                    ->circular()
+                    ->placeholder(''),
+
+                Tables\Columns\ImageColumn::make('end_attendance_photo')
+                    ->label('Foto Pulang')
+                    ->circular()
+                    ->placeholder(''),
+
                 Tables\Columns\TextColumn::make('start_time')
-                    ->label('Waktu Datang'),
+                    ->label('Waktu Datang')
+                    ->formatStateUsing(fn ($state) => $state ?? ''),
+
                 Tables\Columns\TextColumn::make('end_time')
-                    ->label('Waktu Pulang'),
+                    ->label('Waktu Pulang')
+                    ->formatStateUsing(fn ($state) => $state ?? ''),
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime()
                     ->sortable()

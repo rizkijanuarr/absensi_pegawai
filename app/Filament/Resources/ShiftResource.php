@@ -21,6 +21,10 @@ class ShiftResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    use \App\Traits\HasNavigationBadge;
+
+    protected static ?string $navigationGroup = 'Pengaturan';
+
     public static function form(Form $form): Form
     {
         return $form

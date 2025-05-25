@@ -1,6 +1,7 @@
 @push('styles')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .office-tooltip {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -140,70 +141,261 @@
         .leaflet-control-zoom a:last-child {
             border-radius: 0 0 8px 8px;
         }
+        
+        /* Camera Styles */
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        #video {
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+        
+        #canvas {
+            display: none;
+        }
+        
+        .camera-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+        
+        .captured-photo {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 12px;
+            margin: 1rem auto;
+            display: none;
+        }
+
+        .face-detection-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .face-detection-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+        }
+
+        .face-detection-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -20%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        .progress-circle .position-absolute {
+             position: absolute;
+             top: 50%;
+             left: 50%;
+             transform: translate(-50%, -50%);
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             width: 100%;
+             height: 100%;
+             font-weight: bold;
+             font-size: 14px;
+        }
+
+        .btn-camera {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-camera:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-camera:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-camera i {
+            font-size: 18px;
+        }
+
+        .btn-capture {
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            color: white;
+        }
+
+        .btn-capture:hover {
+            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+        }
+
+        .btn-retake {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            color: white;
+        }
+
+        .btn-retake:hover {
+            background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 @endpush
 
-<div>
-    <div class="container mx-auto max-w-sm">
-        <div class="bg-white p-6 rounded-lg mt-3 shadow-lg">
-            <div class="grid grid-cols-1 gap-6 mb-6">
-                {{-- Informasi Pegawai --}}
-                <div>
-                    <h2 class="text-2xl font-bold mb-2">Informasi Pegawai</h2>
-                    <div class="bg-gray-100 p-4 rounded-lg">
-                        <p><strong>Nama Pegawai :</strong> {{ Auth::user()->name }}</p>
-                        <p><strong>Kantor :</strong> {{ $schedule->office->name }}</p>
-                        <p><strong>Shift :</strong> {{ $schedule->shift->name }} ({{ $schedule->shift->start_time }} - {{ $schedule->shift->end_time }}) WIB</p>
-                        <p><strong>Status :</strong>
-                            @if($schedule->is_wfa)
-                                <span class="text-green-500 font-bold">WFA</span>
-                            @else
-                                <span class="text-red-500 font-bold">WFO</span>
-                            @endif
-                        </p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                        <div class="bg-gray-100 p-4 rounded-lg">
-                            <h4 class="text-lg font-bold mb-2">Waktu Datang</h4>
-                            <p>{{ $attendance?->start_time ?? '-' }}</p>
-                        </div>
-                        <div class="bg-gray-100 p-4 rounded-lg">
-                            <h4 class="text-lg font-bold mb-2">Waktu Pulang</h4>
-                            <p>{{ $attendance?->end_time ?? '-' }}</p>
-                        </div>
-                    </div>
+<div class="container py-4">
+    <!-- Stepper Bootstrap -->
+    <div class="mb-4">
+        <div class="d-flex align-items-center mb-2">
+            <div class="me-3">
+                <div class="progress-circle position-relative" style="width:48px;height:48px;">
+                    <svg width="48" height="48">
+                        <circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" stroke-width="6"/>
+                        <circle cx="24" cy="24" r="20" fill="none" stroke="#3B82F6" stroke-width="6" stroke-dasharray="125.6" stroke-dashoffset="{{ $step == 1 ? 62.8 : 0 }}" style="transition:stroke-dashoffset 0.3s;"/>
+                    </svg>
+                    <div class="position-absolute top-50 start-50 translate-middle fw-bold">{{ $step }} / 2</div>
                 </div>
-                {{-- Presensi --}}
-                <div>
-                    <h2 class="text-2xl font-bold mb-2">Presensi</h2>
-                    <div id="map" class="mb-4 rounded-lg border border-gray-300 h-64" wire:ignore></div>
-                    @if (session()->has('error'))
-                        <div class="bg-red-100 text-red-800 p-2 rounded mb-2 border border-red-400">
-                            {{ session('error') }}
-                        </div>
-                    @endif
-                    <form wire:submit.prevent="store" class="mt-4 space-y-3">
-                        <button type="button" onclick="tagLocation()" class="px-4 py-2 bg-blue-500 text-white rounded">Tag Location</button>
-                        @if ($hasTaggedLocation)
-                            <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded">Submit Presensi</button>
-                        @endif
-                    </form>
+            </div>
+            <div>
+                <div class="fw-bold fs-5">Presensi Pegawai</div>
+                <div class="text-muted small">
+                    @if($step == 1) Ambil Photo @else Tag Location @endif
                 </div>
             </div>
         </div>
+        <div class="progress" style="height:6px;">
+            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $step == 1 ? '50%' : '100%' }};"></div>
+        </div>
+    </div>
+
+    <div class="bg-white p-4 rounded shadow-sm">
+        @if($step == 1)
+            <!-- Step 1: Ambil Photo -->
+            <div class="mb-3 text-center">
+                <div class="camera-container mb-3 mx-auto" style="max-width:340px;">
+                    <video id="video" autoplay playsinline style="width:100%;border-radius:12px;"></video>
+                    <canvas id="canvas" style="display:none;"></canvas>
+                    <img id="captured-photo" class="captured-photo" alt="Captured photo" style="display:none;width:100%;border-radius:12px;"/>
+                    <div id="face-detection-overlay" class="face-detection-overlay">
+                        <div class="face-detection-box"></div>
+                        <div class="face-detection-label">Tidak Dikenali</div>
+                    </div>
+                </div>
+                <button type="button" id="capture-photo" class="btn btn-primary px-4">
+                    <i class="fas fa-camera"></i> Ambil Foto
+                </button>
+            </div>
+            <input type="file" id="photo-input" wire:model="photo" accept="image/*" style="display:none;">
+        @elseif($step == 2)
+            <!-- Step 2: Informasi Pegawai & Map Presensi -->
+            <div class="mb-3">
+                <div class="bg-light p-3 rounded mb-3">
+                    <h5 class="fw-bold mb-2">Informasi Pegawai</h5>
+                    <div class="mb-2"><strong>Nama Pegawai :</strong> {{ Auth::user()->name }}</div>
+                    <div class="mb-2"><strong>Kantor :</strong> {{ $schedule->office->name }}</div>
+                    <div class="mb-2"><strong>Shift :</strong> {{ $schedule->shift->name }} ({{ $schedule->shift->start_time }} - {{ $schedule->shift->end_time }}) WIB</div>
+                    <div class="mb-2"><strong>Status :</strong>
+                        @if($schedule->is_wfa)
+                            <span class="text-success fw-bold">WFA</span>
+                        @else
+                            <span class="text-danger fw-bold">WFO</span>
+                        @endif
+                    </div>
+                    <div class="row mt-3 g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="bg-gray-100 p-3 rounded">
+                                <h6 class="fw-bold mb-1">Waktu Datang</h6>
+                                <p class="mb-0">{{ $attendance?->start_time ?? '-' }}</p>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="bg-gray-100 p-3 rounded">
+                                <h6 class="fw-bold mb-1">Waktu Pulang</h6>
+                                <p class="mb-0">{{ $attendance?->end_time ?? '-' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="map" class="mb-3 rounded-lg border border-gray-300" style="height:260px;" wire:ignore></div>
+                <div class="d-flex gap-2">
+                    <button type="button" onclick="tagLocation()" class="btn btn-outline-primary flex-fill">Tag Location</button>
+                    @if ($hasTaggedLocation)
+                        <form wire:submit.prevent="submitPresensi" class="flex-fill">
+                            <button type="submit" class="btn btn-success w-100">Submit Presensi</button>
+                        </form>
+                    @endif
+                </div>
+                @if (!$hasTaggedLocation)
+                    <div class="text-danger small mt-2">Silakan tag lokasi terlebih dahulu.</div>
+                @endif
+            </div>
+        @endif
     </div>
 </div>
 
 @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        let map, marker, officeMarker;
+        // Global variables
+        let map = null;
+        let marker = null;
+        let officeMarker = null;
+        let mapInitialized = false;
+        let component = null;
+        
+        // Office data
         const office = [{{ $schedule->office->latitude }}, {{ $schedule->office->longitude }}];
         const radius = {{ $schedule->office->radius }};
         const officeName = "{{ $schedule->office->name }}";
-        let component;
 
+        // Icon definitions
         const officeIcon = L.divIcon({
             className: 'custom-office-marker',
             html: '<div class="office-icon"><i class="fas fa-building"></i></div>',
@@ -217,42 +409,56 @@
             iconAnchor: [15, 30]
         });
 
-        document.addEventListener('livewire:initialized', function () {
-            component = @this;
-            map = L.map('map').setView(office, 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
-            const circle = L.circle(office, {
-                color: '#3B82F6',
-                fillColor: '#3B82F6',
-                fillOpacity: 0.15,
-                weight: 3,
-                radius: radius,
-                dashArray: '10, 5'
-            }).addTo(map);
-            // circle.bindTooltip(officeName, { permanent: true, direction: 'center', className: 'office-tooltip', offset: [0, -10] });
-            officeMarker = L.marker(office, { icon: officeIcon }).addTo(map)
-                .bindPopup(`
-                    <div class="office-popup">
-                        <div class="popup-header">
-                            <i class="fas fa-building"></i>
-                            <strong>${officeName}</strong>
-                        </div>
-                        <div class="popup-content">
-                            <div class="info-item">
-                                <i class="fas fa-circle-dot"></i>
-                                <span>Radius Absensi: <strong>${radius}m</strong></span>
+        // Force map always show on step 2
+        function initializeMapIfNeeded() {
+            const mapElement = document.getElementById('map');
+            const currentStep = document.querySelector('.fw-bold')?.textContent?.includes('2 / 2');
+            if (!currentStep) {
+                mapInitialized = false;
+                if (map) {
+                    map.remove();
+                    map = null;
+                }
+                return;
+            }
+            if (mapElement && !mapInitialized) {
+                mapInitialized = true;
+                if (map) {
+                    map.remove();
+                    map = null;
+                }
+                map = L.map('map').setView(office, 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+                const circle = L.circle(office, {
+                    color: '#3B82F6', fillColor: '#3B82F6', fillOpacity: 0.15, weight: 3, radius: radius, dashArray: '10, 5'
+                }).addTo(map);
+                officeMarker = L.marker(office, { icon: officeIcon }).addTo(map)
+                    .bindPopup(`
+                        <div class="office-popup">
+                            <div class="popup-header">
+                                <i class="fas fa-building"></i>
+                                <strong>${officeName}</strong>
                             </div>
-                            <div class="info-item">
-                                <i class="fas fa-map-pin"></i>
-                                <span>Kantor Pusat</span>
+                            <div class="popup-content">
+                                <div class="info-item">
+                                    <i class="fas fa-circle-dot"></i>
+                                    <span>Radius Absensi: <strong>${radius}m</strong></span>
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-map-pin"></i>
+                                    <span>Kantor Pusat</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `);
-        });
+                    `);
+                map.invalidateSize();
+            }
+        }
+        setInterval(initializeMapIfNeeded, 300);
 
+        // Tag location function
         function tagLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(function (position) {
@@ -318,12 +524,21 @@
             }
         }
 
+        // Livewire events
+        document.addEventListener('livewire:initialized', function () {
+            component = @this;
+        });
+
+        // Success/error handlers
         window.addEventListener('presensi-success', function () {
             Swal.fire({
                 icon: 'success',
                 title: 'Presensi Berhasil!',
                 text: 'Presensi kamu sudah tercatat!',
-                confirmButtonText: 'OK'
+                confirmButtonText: 'OK',
+                didClose: () => {
+                    window.location.href = '/backoffice/attendances';
+                }
             });
         });
 
@@ -346,5 +561,69 @@
                 timerProgressBar: true
             });
         });
+
+        // Listen for presensi completed event to show Swal and redirect
+        window.addEventListener('presensi-completed', function (event) {
+            Swal.fire({
+                icon: 'info', // Atau 'success' jika diinginkan
+                title: 'Presensi Selesai',
+                text: event.detail.message || 'Anda sudah melakukan presensi hari ini.',
+                confirmButtonText: 'OK',
+                allowOutsideClick: false,
+                didClose: () => {
+                    window.location.href = '/backoffice/attendances';
+                }
+            });
+        });
+
+        // Camera functionality
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let capturedPhoto = document.getElementById('captured-photo');
+        let capturePhotoBtn = document.getElementById('capture-photo');
+        let faceDetectionLabel = document.querySelector('.face-detection-label');
+        let input = document.getElementById('photo-input');
+        let stream = null;
+
+        if (video && capturePhotoBtn) {
+            async function startCamera() {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { width: 340, height: 340, facingMode: 'user' } 
+                    });
+                    video.srcObject = stream;
+                } catch (err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            }
+            startCamera();
+
+            capturePhotoBtn.addEventListener('click', async () => {
+                capturePhotoBtn.disabled = true;
+                capturePhotoBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sedang Memproses';
+                faceDetectionLabel.textContent = 'Sedang Memproses';
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                canvas.toBlob((blob) => {
+                    let file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+                    let dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    input.files = dataTransfer.files;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                    capturedPhoto.src = URL.createObjectURL(blob);
+                    capturedPhoto.style.display = 'block';
+                    video.style.display = 'none';
+                    capturePhotoBtn.style.display = 'none';
+                    if (stream) { stream.getTracks().forEach(track => track.stop()); }
+                }, 'image/jpeg', 0.8);
+            });
+        }
     </script>
 @endpush

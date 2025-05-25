@@ -13,6 +13,10 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Hash;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TextInput;
 
 class UserResource extends Resource
 {
@@ -21,6 +25,10 @@ class UserResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-s-user-group';
 
     protected static ?int $navigationSort = 3;
+
+    use \App\Traits\HasNavigationBadge;
+
+    protected static ?string $navigationGroup = 'Pengaturan';
 
     public static function form(Form $form): Form
     {
@@ -43,6 +51,8 @@ class UserResource extends Resource
                                 ->relationship('roles', 'name')
                                 ->preload()
                                 ->searchable(),
+                            Forms\Components\FileUpload::make('image')
+                                ->image()
                         ])
                         ->columnSpan(2),
 
@@ -70,6 +80,8 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('image')
+                    ->circular(),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')

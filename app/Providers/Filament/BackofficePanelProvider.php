@@ -24,6 +24,10 @@ class BackofficePanelProvider extends PanelProvider
     {
         return $panel
             ->default()
+            ->navigationGroups([
+                'Presensi',
+                'Pengaturan',
+            ])
             ->id('backoffice')
             ->path('backoffice')
             ->login()

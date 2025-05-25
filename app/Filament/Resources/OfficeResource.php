@@ -23,6 +23,10 @@ class OfficeResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    use \App\Traits\HasNavigationBadge;
+
+    protected static ?string $navigationGroup = 'Pengaturan';
+
     public static function form(Form $form): Form
     {
         return $form

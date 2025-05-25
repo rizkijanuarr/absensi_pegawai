@@ -17,6 +17,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'image'
     ];
 
     protected $hidden = [
@@ -24,11 +25,13 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed'
+    ];
+
+    public function getImageUrlAttribute(): ?string
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->image ? asset('storage/' . $this->image) : null;
     }
 }

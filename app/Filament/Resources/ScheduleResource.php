@@ -22,6 +22,10 @@ class ScheduleResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
+    use \App\Traits\HasNavigationBadge;
+
+    protected static ?string $navigationGroup = 'Presensi';
+
     public static function form(Form $form): Form
     {
         return $form
