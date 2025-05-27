@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c7e7c8d291e209345ec6d46a010e404c",
+    "content-hash": "533fe9e5f75881271bee1f9b88be8d20",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -71,6 +71,72 @@
                 "source": "https://github.com/AnourValar/eloquent-serialize/tree/1.3.1"
             },
             "time": "2025-04-06T06:54:34+00:00"
+        },
+        {
+            "name": "aymanalhattami/filament-slim-scrollbar",
+            "version": "2.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/aymanalhattami/filament-slim-scrollbar.git",
+                "reference": "306e32e28e9506e5667c248d1f6a876339a7b4be"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/aymanalhattami/filament-slim-scrollbar/zipball/306e32e28e9506e5667c248d1f6a876339a7b4be",
+                "reference": "306e32e28e9506e5667c248d1f6a876339a7b4be",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^3.0",
+                "spatie/laravel-package-tools": "^1.15"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.0",
+                "orchestra/testbench": "^9.0",
+                "pestphp/pest": "^3.0",
+                "phpstan/phpstan": "^1.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "FilamentSlimScrollbar": "Aymanalhattami\\FilamentSlimScrollbar\\FilamentSlimScrollbarFacade"
+                    },
+                    "providers": [
+                        "Aymanalhattami\\FilamentSlimScrollbar\\FilamentSlimScrollbarServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Aymanalhattami\\FilamentSlimScrollbar\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ayman Alhattami",
+                    "email": "ayman.m.alhattami@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Slim scrollbar for sidebar scrollbar, table scrollbar, and any other scrollbar in the application.",
+            "homepage": "https://github.com/aymanalhattami/filament-slim-scrollbar",
+            "keywords": [
+                "aymanalhattami",
+                "css slim scrollbar",
+                "filament",
+                "filament-slim-scrollbar",
+                "pure css scrollbar"
+            ],
+            "support": {
+                "issues": "https://github.com/aymanalhattami/filament-slim-scrollbar/issues",
+                "source": "https://github.com/aymanalhattami/filament-slim-scrollbar/tree/2.1.0"
+            },
+            "time": "2025-02-03T14:21:04+00:00"
         },
         {
             "name": "bezhansalleh/filament-shield",
@@ -2569,6 +2635,74 @@
                 "source": "https://github.com/humaidem/filament-map-picker"
             },
             "time": "2023-11-20T19:40:40+00:00"
+        },
+        {
+            "name": "husam-tariq/filament-timepicker",
+            "version": "v3.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/husam-tariq/filament-timepicker.git",
+                "reference": "7922d60a55b0414ce954c23ec93eacdfc03face4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/husam-tariq/filament-timepicker/zipball/7922d60a55b0414ce954c23ec93eacdfc03face4",
+                "reference": "7922d60a55b0414ce954c23ec93eacdfc03face4",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^3.0.5",
+                "php": "^8.1",
+                "spatie/laravel-package-tools": "^1.15.0"
+            },
+            "require-dev": {
+                "nunomaduro/collision": "^7.9",
+                "orchestra/testbench": "^8.0",
+                "pestphp/pest": "^2.0",
+                "pestphp/pest-plugin-arch": "^2.0",
+                "pestphp/pest-plugin-laravel": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "FilamentTimePicker": "HusamTariq\\FilamentTimePicker\\Facades\\FilamentTimePicker"
+                    },
+                    "providers": [
+                        "HusamTariq\\FilamentTimePicker\\FilamentTimePickerServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "HusamTariq\\FilamentTimePicker\\": "src/",
+                    "HusamTariq\\FilamentTimePicker\\Database\\Factories\\": "database/factories/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Hussam Tariq",
+                    "email": "hu22am1@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Filament 3.x Time Picker",
+            "homepage": "https://github.com/husam-tariq/filament-timepicker",
+            "keywords": [
+                "filament",
+                "filament-timepicker",
+                "husam-tariq",
+                "laravel"
+            ],
+            "support": {
+                "issues": "https://github.com/husam-tariq/filament-timepicker/issues",
+                "source": "https://github.com/husam-tariq/filament-timepicker"
+            },
+            "time": "2024-05-23T20:31:39+00:00"
         },
         {
             "name": "kirschbaum-development/eloquent-power-joins",

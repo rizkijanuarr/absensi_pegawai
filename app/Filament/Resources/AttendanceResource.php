@@ -15,6 +15,13 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Humaidem\FilamentMapPicker\Fields\OSMMap;
 use Auth;
 
+// TODO LIST!!!
+/*  
+    1. EDIT DI REKAP ATTENDANCE DI SUPER ADMIN ENABLE
+    2. DI HALAMAN PRESENSI BISA MELAKUKAN ENABLE DAN DISABLE KAMERANYA DILAKUKAN DI SUPER ADMIN 
+    3. FITUR OFFICE LATITUDE & LONGITUDE BISA DI ISI KEMUDIAN SEARCH
+*/
+
 class AttendanceResource extends Resource
 {
     protected static ?string $model = Attendance::class;

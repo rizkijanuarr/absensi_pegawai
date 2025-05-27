@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use HusamTariq\FilamentTimePicker\Forms\Components\TimePickerField;
 
 class ShiftResource extends Resource
 {
@@ -29,30 +30,47 @@ class ShiftResource extends Resource
     {
         return $form
             ->schema([
-                 Forms\Components\Grid::make(12) 
-                    ->schema([
-                        Forms\Components\Section::make('Shift')
-                            ->schema([
-                                Forms\Components\TextInput::make('name')
-                                    ->required()
-                                    ->maxLength(255),
-                                Forms\Components\TimePicker::make('start_time')
-                                    ->required(),
-                                Forms\Components\TimePicker::make('end_time')
-                                    ->required(),
-                        ])
-                    ])
+                Forms\Components\Grid::make(12)
+                ->schema([
+                    Forms\Components\Section::make('Shift')
+                        ->description('💡 Informasi Waktu AM 00.00 - 11.59 | Waktu PM 12.00 - 23.59')
+                        ->schema([
+                            Forms\Components\TextInput::make('name')
+                                ->label('Nama Shift')
+                                ->live(onBlur: true)
+                                ->required()
+                                ->maxLength(255),
+
+                            Forms\Components\Grid::make(2)
+                                ->schema([
+                                    TimePickerField::make('start_time')
+                                        ->label('Shift Mulai Bekerja')
+                                        ->okLabel('Konfirmasi')
+                                        ->cancelLabel('Batal')
+                                        ->required(),
+                                    TimePickerField::make('end_time')
+                                        ->label('Shift Akhir Bekerja')
+                                        ->okLabel('Konfirmasi')
+                                        ->cancelLabel('Batal')
+                                        ->required(),
+                                ]),
+                        ]),
+                ])
             ]);
     }
+    
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nama Shift')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('start_time'),
-                Tables\Columns\TextColumn::make('end_time'),
+                Tables\Columns\TextColumn::make('start_time')
+                    ->label('Shift Mulai Bekerja'),
+                Tables\Columns\TextColumn::make('end_time')
+                    ->label('Shift Akhir Bekerja'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
