@@ -67,6 +67,60 @@ class AttendanceResource extends Resource
                     ])
                     ->columnSpanFull(),
 
+                // Section 2: Status Presensi
+                Forms\Components\Section::make('Status Presensi')
+                    ->schema([
+                        Forms\Components\Group::make()
+                            ->schema([
+                                Forms\Components\Select::make('overdue')
+                                    ->label('Status Datang')
+                                    ->options([
+                                        'on_time' => 'Tepat Waktu',
+                                        'tl_1' => 'Terlambat 1-60 Menit',
+                                        'tl_2' => 'Terlambat > 60 Menit',
+                                        'not_present' => 'Tidak Hadir',
+                                    ])
+                                    ->default('on_time')
+                                    ->required(),
+
+                                Forms\Components\TextInput::make('overdue_minutes')
+                                    ->label('Keterlambatan (Menit)')
+                                    ->numeric()
+                                    ->default(0)
+                                    ->required(),
+
+                                Forms\Components\Select::make('return')
+                                    ->label('Status Pulang')
+                                    ->options([
+                                        'on_time' => 'Tepat Waktu',
+                                        'psw_1' => 'Pulang Awal 1-30 Menit',
+                                        'psw_2' => 'Pulang Awal 31-60 Menit',
+                                        'not_present' => 'Tidak Hadir',
+                                    ])
+                                    ->default('on_time')
+                                    ->required(),
+
+                                Forms\Components\TextInput::make('return_minutes')
+                                    ->label('Pulang Awal (Menit)')
+                                    ->numeric()
+                                    ->default(0)
+                                    ->required(),
+
+                                Forms\Components\Select::make('overall_status')
+                                    ->label('Status Keseluruhan')
+                                    ->options([
+                                        'perfect' => 'Sempurna',
+                                        'overdue_only' => 'Hanya Terlambat',
+                                        'return_only' => 'Hanya Pulang Awal',
+                                        'red_flag' => 'Terlambat & Pulang Awal',
+                                        'absent' => 'Tidak Hadir',
+                                    ])
+                                    ->required(),
+                            ])
+                            ->columns(2),
+                    ])
+                    ->columnSpanFull(),
+
                 // Section 2: Check In & Check Out Location (Side by Side)
                 Forms\Components\Group::make()
                     ->schema([
@@ -232,6 +286,29 @@ class AttendanceResource extends Resource
             Tables\Columns\TextColumn::make('end_time')
                 ->label('Waktu Pulang')
                 ->formatStateUsing(fn ($state) => $state ?? ''),
+
+            Tables\Columns\BadgeColumn::make('overdue')
+                ->label('Status Datang')
+                ->formatStateUsing(fn ($record) => $record->overdue_status_label)
+                ->color(fn ($record) => $record->overdue_status_color),
+
+            Tables\Columns\TextColumn::make('overdue_minutes')
+                ->label('Keterlambatan (Menit)')
+                ->formatStateUsing(fn ($state) => $state ? "{$state} menit" : '-'),
+
+            Tables\Columns\BadgeColumn::make('return')
+                ->label('Status Pulang')
+                ->formatStateUsing(fn ($record) => $record->return_status_label)
+                ->color(fn ($record) => $record->return_status_color),
+
+            Tables\Columns\TextColumn::make('return_minutes')
+                ->label('Pulang Awal (Menit)')
+                ->formatStateUsing(fn ($state) => $state ? "{$state} menit" : '-'),
+
+            Tables\Columns\BadgeColumn::make('overall_status')
+                ->label('Status Keseluruhan')
+                ->formatStateUsing(fn ($record) => $record->overall_status_label)
+                ->color(fn ($record) => $record->overall_status_color),
 
             Tables\Columns\TextColumn::make('updated_at')
                 ->dateTime()
