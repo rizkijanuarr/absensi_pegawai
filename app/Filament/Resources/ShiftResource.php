@@ -24,7 +24,7 @@ class ShiftResource extends Resource
 
     use \App\Traits\HasNavigationBadge;
 
-    protected static ?string $navigationGroup = 'Pengaturan';
+    protected static ?string $navigationGroup = 'Master Data';
 
     public static function form(Form $form): Form
     {
@@ -63,14 +63,17 @@ class ShiftResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Shift')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('start_time')
-                    ->label('Shift Mulai Bekerja'),
+                    ->label('Shift Mulai Bekerja')
+                    ->suffix(' WIB'),
                 Tables\Columns\TextColumn::make('end_time')
-                    ->label('Shift Akhir Bekerja'),
+                    ->label('Shift Akhir Bekerja')
+                    ->suffix(' WIB'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -88,7 +91,18 @@ class ShiftResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->color('gray')
+                    ->button()
+                    ->icon('heroicon-o-eye'),
+                Tables\Actions\EditAction::make()
+                    ->color('primary')
+                    ->button()
+                    ->icon('heroicon-o-pencil-square'),
+                Tables\Actions\DeleteAction::make()
+                    ->color('danger')
+                    ->button()
+                    ->icon('heroicon-o-trash'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

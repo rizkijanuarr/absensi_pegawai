@@ -304,7 +304,12 @@
             <div>
                 <div class="fw-bold fs-5">Presensi Pegawai</div>
                 <div class="text-muted small">
-                    @if($step == 1) Ambil Photo @else Tag Location @endif
+                    @if($step == 1 && $isCameraEnabled) Ambil Photo
+                    @elseif($step == 2)
+                        @if($currentAction == 'arrival') Tag Lokasi Datang @else Tag Lokasi Pulang @endif
+                    @else
+                        Tag Lokasi
+                    @endif
                 </div>
             </div>
         </div>
@@ -314,7 +319,7 @@
     </div>
 
     <div class="bg-white p-4 rounded shadow-sm">
-        @if($step == 1)
+        @if($step == 1 && $isCameraEnabled)
             <!-- Step 1: Ambil Photo -->
             <div class="mb-3 text-center">
                 <div class="camera-container mb-3 mx-auto" style="max-width:340px;">
@@ -336,11 +341,11 @@
             <div class="mb-3">
                 <div class="bg-light p-3 rounded mb-3">
                     <h5 class="fw-bold mb-2">Informasi Pegawai</h5>
-                    <div class="mb-2"><strong>Nama Pegawai :</strong> {{ Auth::user()->name }}</div>
-                    <div class="mb-2"><strong>Kantor :</strong> {{ $schedule->office->name }}</div>
-                    <div class="mb-2"><strong>Shift :</strong> {{ $schedule->shift->name }} ({{ $schedule->shift->start_time }} - {{ $schedule->shift->end_time }}) WIB</div>
+                    <div class="mb-2"><strong>Nama Pegawai :</strong> {{ Auth::user()->name ?? 'N/A' }}</div>
+                    <div class="mb-2"><strong>Kantor :</strong> {{ $schedule?->office?->name ?? 'N/A' }}</div>
+                    <div class="mb-2"><strong>Shift :</strong> {{ $schedule?->shift?->name ?? 'N/A' }} ({{ $schedule?->shift?->start_time ?? '-' }} - {{ $schedule?->shift?->end_time ?? '-' }}) WIB</div>
                     <div class="mb-2"><strong>Status :</strong>
-                        @if($schedule->is_wfa)
+                        @if($schedule && $schedule->is_wfa)
                             <span class="text-success fw-bold">WFA</span>
                         @else
                             <span class="text-danger fw-bold">WFO</span>
@@ -391,9 +396,9 @@
         let component = null;
         
         // Office data
-        const office = [{{ $schedule->office->latitude }}, {{ $schedule->office->longitude }}];
-        const radius = {{ $schedule->office->radius }};
-        const officeName = "{{ $schedule->office->name }}";
+        const office = [{{ $schedule?->office?->latitude ?? 0 }}, {{ $schedule?->office?->longitude ?? 0 }}];
+        const radius = {{ $schedule?->office?->radius ?? 0 }};
+        const officeName = "{{ $schedule?->office?->name ?? 'N/A' }}";
 
         // Icon definitions
         const officeIcon = L.divIcon({
@@ -427,39 +432,58 @@
                     map.remove();
                     map = null;
                 }
-                map = L.map('map').setView(office, 15);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(map);
-                const circle = L.circle(office, {
-                    color: '#3B82F6', fillColor: '#3B82F6', fillOpacity: 0.15, weight: 3, radius: radius, dashArray: '10, 5'
-                }).addTo(map);
-                officeMarker = L.marker(office, { icon: officeIcon }).addTo(map)
-                    .bindPopup(`
-                        <div class="office-popup">
-                            <div class="popup-header">
-                                <i class="fas fa-building"></i>
-                                <strong>${officeName}</strong>
-                            </div>
-                            <div class="popup-content">
-                                <div class="info-item">
-                                    <i class="fas fa-circle-dot"></i>
-                                    <span>Radius Absensi: <strong>${radius}m</strong></span>
+                
+                // Hanya inisialisasi map jika office data valid
+                if (office[0] !== 0 || office[1] !== 0) {
+                    map = L.map('map').setView(office, 15);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(map);
+                    const circle = L.circle(office, {
+                        color: '#3B82F6', fillColor: '#3B82F6', fillOpacity: 0.15, weight: 3, radius: radius, dashArray: '10, 5'
+                    }).addTo(map);
+                    officeMarker = L.marker(office, { icon: officeIcon }).addTo(map)
+                        .bindPopup(`
+                            <div class="office-popup">
+                                <div class="popup-header">
+                                    <i class="fas fa-building"></i>
+                                    <strong>${officeName}</strong>
                                 </div>
-                                <div class="info-item">
-                                    <i class="fas fa-map-pin"></i>
-                                    <span>Kantor Pusat</span>
+                                <div class="popup-content">
+                                    <div class="info-item">
+                                        <i class="fas fa-circle-dot"></i>
+                                        <span>Radius Absensi: <strong>${radius}m</strong></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <i class="fas fa-map-pin"></i>
+                                        <span>Kantor Pusat</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    `);
-                map.invalidateSize();
+                        `);
+                    map.invalidateSize();
+                } else {
+                    // Tampilkan pesan jika data office tidak lengkap
+                    console.error('Office data not available for map initialization.');
+                    mapElement.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted">Data lokasi kantor tidak lengkap.</div>';
+                }
             }
         }
         setInterval(initializeMapIfNeeded, 300);
 
         // Tag location function
         function tagLocation() {
+            // Jangan tag lokasi jika office data tidak valid
+             if (office[0] === 0 && office[1] === 0) {
+                 Swal.fire({
+                     icon: 'error',
+                     title: 'Data Kantor Tidak Lengkap!',
+                     text: 'Tidak dapat menandai lokasi karena data kantor belum lengkap. Mohon hubungi administrator.',
+                     confirmButtonText: 'OK'
+                 });
+                 return;
+             }
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(function (position) {
                     const lat = position.coords.latitude;
@@ -473,7 +497,7 @@
                         <div class="user-popup">
                             <div class="popup-header user-header">
                                 <i class="fas fa-user-circle"></i>
-                                <strong>{{ Auth::user()->name }}</strong>
+                                <strong>{{ Auth::user()->name ?? 'N/A' }}</strong>
                             </div>
                             <div class="popup-content">
                                 <div class="info-item">
@@ -488,7 +512,8 @@
                         </div>
                     `).openPopup();
 
-                    const isWfa = "{{ $schedule->is_wfa }}" === "1";
+                    // Handle potential null for schedule before accessing is_wfa
+                    const isWfa = "{{ $schedule?->is_wfa ?? 0 }}" === "1"; // Gunakan null coalesce
                     const withinRadius = map.distance([lat, lng], office) <= radius;
 
                     if (isWfa || withinRadius) {
@@ -572,6 +597,20 @@
                 allowOutsideClick: false,
                 didClose: () => {
                     window.location.href = '/backoffice/attendances';
+                }
+            });
+        });
+
+         // Listen for no-schedule event to show Swal and redirect
+        window.addEventListener('no-schedule', function (event) {
+            Swal.fire({
+                icon: 'warning', // Atau icon lain yang sesuai
+                title: 'Akses Dibatasi',
+                text: event.detail.message || 'Anda belum memiliki jadwal kerja.',
+                confirmButtonText: 'OK',
+                allowOutsideClick: false, // Jangan izinkan klik di luar SweetAlert
+                didClose: () => { // Ketika SweetAlert ditutup
+                    window.location.href = '/backoffice/attendances'; // Redirect
                 }
             });
         });

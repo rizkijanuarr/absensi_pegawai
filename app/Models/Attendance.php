@@ -52,4 +52,9 @@ class Attendance extends Model
         return $this->schedule?->shift?->name;
     }
 
+    // Accessor untuk mengecek status kamera user terkait
+    public function getIsUserCameraEnabledAttribute(): bool
+    {
+        return $this->user?->is_camera_enabled ?? false;
+    }
 }

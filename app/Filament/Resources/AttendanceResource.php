@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Humaidem\FilamentMapPicker\Fields\OSMMap;
 use Auth;
+use Afsakar\LeafletMapPicker\LeafletMapPicker;
 
 // TODO LIST!!!
 /*  
@@ -32,7 +33,7 @@ class AttendanceResource extends Resource
 
     use \App\Traits\HasNavigationBadge;
 
-    protected static ?string $navigationGroup = 'Presensi';
+    protected static ?string $navigationGroup = 'Manajamen Presensi';
 
     public static function form(Form $form): Form
     {
@@ -40,6 +41,7 @@ class AttendanceResource extends Resource
             ->schema([
                 // Section 1: Informasi Pegawai
                 Forms\Components\Section::make('Informasi Pegawai')
+                    ->description('💡 Informasi Waktu AM 00.00 - 11.59 | Waktu PM 12.00 - 23.59')
                     ->schema([
                         Forms\Components\TextInput::make('user_id')
                             ->label('Nama Pegawai')
@@ -49,17 +51,17 @@ class AttendanceResource extends Resource
                         Forms\Components\Group::make()
                             ->schema([
                                 Forms\Components\TextInput::make('schedule_start_time')
-                                    ->label('Waktu mulai bekerja')
+                                    ->label('Shift mulai bekerja')
                                     ->disabled(),
                                 Forms\Components\TextInput::make('schedule_end_time')
-                                    ->label('Waktu akhir bekerja')
+                                    ->label('Shift akhir bekerja')
                                     ->disabled(),
-                                Forms\Components\TextInput::make('start_time')
+                                Forms\Components\TimePicker::make('start_time')
                                     ->label('Waktu jam datang')
-                                    ->disabled(),
-                                Forms\Components\TextInput::make('end_time')
+                                    ->suffixIconColor('success'), 
+                                Forms\Components\TimePicker::make('end_time')
                                     ->label('Waktu jam pulang')
-                                    ->disabled(),
+                                    ->suffixIconColor('danger'), 
                             ])
                             ->columns(2),
                     ])
@@ -71,31 +73,65 @@ class AttendanceResource extends Resource
                         // Check In Location (Kiri)
                         Forms\Components\Section::make('Check In Location')
                             ->schema([
-                                OSMMap::make('start_location')
+                                LeafletMapPicker::make('start_location')
                                     ->label('Check-in Location')
-                                    ->showMarker()
-                                    ->draggable(false)
+                                    ->height('200px')
                                     ->dehydrated(false)
+                                    ->defaultLocation(function ($record) {
+                                            return [
+                                                $record->start_latitude,
+                                                $record->start_longitude,
+                                            ];
+                                        })
+                                    ->defaultZoom(8)
+                                    ->draggable()
+                                    ->clickable()
+                                    ->myLocationButtonLabel('My Location')
+                                    ->tileProvider('google')
+                                    ->customTiles([
+                                        'mapbox' => [
+                                            'url' => 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
+                                            'options' => [
+                                                'attribution' => '&copy; <a href="https://www.mapbox.com/">Mapbox</a>',
+                                                'id' => 'mapbox/streets-v11',
+                                                'maxZoom' => 19,
+                                                'accessToken' => 'pk.eyJ1Ijoicml6a2kxIiwiYSI6ImNtYjZobTV2OTAwdGEycnNneW40bnl1NDgifQ.ERemFCNO0wv2gwRjFoppqg', // Ganti dengan token yang valid
+                                            ]
+                                        ]
+                                    ])
+                                    ->customMarker([
+                                        'iconUrl' => asset('pin.png'),
+                                        'iconSize' => [38, 38],
+                                        'iconAnchor' => [19, 38],
+                                        'popupAnchor' => [0, -38]
+                                    ])
                                     ->afterStateHydrated(function (Forms\Set $set, $state, $record) {
-                                        if ($record && $record->start_latitude && $record->start_longitude) {
+                                        if ($record && $record->latitude && $record->longitude) {
                                             $set('start_location', [
-                                                'lat' => $record->start_latitude,
-                                                'lng' => $record->start_longitude,
+                                                'lat' => $record->latitude,
+                                                'lng' => $record->longitude,
                                             ]);
                                         }
                                     })
-                                    ->tilesUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+                                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                        if (is_array($state)) {
+                                            $set('start_latitude', $state['lat']);
+                                            $set('start_longitude', $state['lng']);
+                                        }
+                                    }),
 
                                 Forms\Components\Group::make()
                                     ->schema([
                                         Forms\Components\TextInput::make('start_latitude')
                                             ->label('Checkin Latitude')
-                                            ->disabled()
-                                            ->numeric(),
+                                            ->numeric()
+                                            ->prefixIcon('heroicon-o-map-pin')
+                                            ->prefixIconColor('success'),
                                         Forms\Components\TextInput::make('start_longitude')
                                             ->label('Checkin Longitude')
-                                            ->disabled()
-                                            ->numeric(),
+                                            ->numeric()
+                                            ->prefixIcon('heroicon-o-map-pin')
+                                            ->prefixIconColor('success'),
                                     ])
                                     ->columns(2),
                             ])
@@ -104,32 +140,65 @@ class AttendanceResource extends Resource
                         // Check Out Location (Kanan)
                         Forms\Components\Section::make('Check Out Location')
                             ->schema([
-                                OSMMap::make('end_location')
+                                LeafletMapPicker::make('end_location')
                                     ->label('Check-out Location')
-                                    ->showMarker()
-                                    ->draggable(false)
+                                    ->height('200px')
                                     ->dehydrated(false)
+                                    ->defaultLocation(function ($record) {
+                                            return [
+                                                $record->end_latitude,
+                                                $record->end_longitude,
+                                            ];
+                                        })
+                                    ->defaultZoom(8)
+                                    ->draggable()
+                                    ->clickable()
+                                    ->myLocationButtonLabel('My Location')
+                                    ->tileProvider('google')
+                                    ->customTiles([
+                                        'mapbox' => [
+                                            'url' => 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
+                                            'options' => [
+                                                'attribution' => '&copy; <a href="https://www.mapbox.com/">Mapbox</a>',
+                                                'id' => 'mapbox/streets-v11',
+                                                'maxZoom' => 19,
+                                                'accessToken' => 'pk.eyJ1Ijoicml6a2kxIiwiYSI6ImNtYjZobTV2OTAwdGEycnNneW40bnl1NDgifQ.ERemFCNO0wv2gwRjFoppqg', 
+                                            ]
+                                        ]
+                                    ])
+                                    ->customMarker([
+                                        'iconUrl' => asset('pin.png'),
+                                        'iconSize' => [38, 38],
+                                        'iconAnchor' => [19, 38],
+                                        'popupAnchor' => [0, -38]
+                                    ])
                                     ->afterStateHydrated(function (Forms\Set $set, $state, $record) {
-                                        if ($record && $record->end_latitude && $record->end_longitude) {
+                                        if ($record && $record->latitude && $record->longitude) {
                                             $set('end_location', [
-                                                'lat' => $record->end_latitude,
-                                                'lng' => $record->end_longitude,
+                                                'lat' => $record->latitude,
+                                                'lng' => $record->longitude,
                                             ]);
                                         }
                                     })
-                                    ->tilesUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-                                    ->visible(fn ($record) => $record && $record->end_latitude && $record->end_longitude),
+                                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                        if (is_array($state)) {
+                                            $set('end_latitude', $state['lat']);
+                                            $set('end_longitude', $state['lng']);
+                                        }
+                                    }),
 
                                 Forms\Components\Group::make()
                                     ->schema([
                                         Forms\Components\TextInput::make('end_latitude')
                                             ->label('Checkout Latitude')
-                                            ->disabled()
-                                            ->numeric(),
+                                            ->numeric()
+                                            ->prefixIcon('heroicon-o-map-pin')
+                                            ->prefixIconColor('danger'),
                                         Forms\Components\TextInput::make('end_longitude')
                                             ->label('Checkout Longitude')
-                                            ->disabled()
-                                            ->numeric(),
+                                            ->numeric()
+                                            ->prefixIcon('heroicon-o-map-pin')
+                                            ->prefixIconColor('danger'),
                                     ])
                                     ->columns(2)
                                     ->visible(fn ($record) => $record && ($record->end_latitude || $record->end_longitude)),
@@ -138,63 +207,48 @@ class AttendanceResource extends Resource
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
-
-                // Section 3: Office Location
-                Forms\Components\Section::make('Office Location')
-                    ->schema([
-                        OSMMap::make('schedule_location')
-                            ->label('Office Location')
-                            ->showMarker()
-                            ->draggable(false)
-                            ->dehydrated(false)
-                            ->afterStateHydrated(function (Forms\Set $set, $state, $record) {
-                                if ($record && $record->schedule_latitude && $record->schedule_longitude) {
-                                    $set('schedule_location', [
-                                        'lat' => $record->schedule_latitude,
-                                        'lng' => $record->schedule_longitude,
-                                    ]);
-                                }
-                            })
-                            ->tilesUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
-
-                        Forms\Components\Group::make()
-                            ->schema([
-                                Forms\Components\TextInput::make('schedule_latitude')
-                                    ->label('Office Latitude')
-                                    ->disabled()
-                                    ->numeric(),
-                                Forms\Components\TextInput::make('schedule_longitude')
-                                    ->label('Office Longitude')
-                                    ->disabled()
-                                    ->numeric(),
-                            ])
-                            ->columns(2),
-                    ])
-                    ->columnSpanFull(),
             ]);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
-         ->modifyQueryUsing(function (Builder $query) {
-                $is_super_admin = Auth::user()->hasRole('super_admin');
+        $isSuperAdmin = Auth::user()->hasRole('super_admin');
 
-                if (!$is_super_admin) {
-                    $query->where('user_id', Auth::user()->id);
-                }
-            })
-            ->columns([
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label('Pegawai')
-                    ->sortable(),
+        $columns = [
+            Tables\Columns\TextColumn::make('user.name')
+                ->label('Pegawai')
+                ->searchable()
+                ->sortable(),
 
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Tanggal')
-                    ->date()
-                    ->sortable(),
+            Tables\Columns\TextColumn::make('created_at')
+                ->label('Tanggal')
+                ->date()
+                ->sortable(),
 
-                Tables\Columns\ImageColumn::make('start_attendance_photo')
+            Tables\Columns\TextColumn::make('start_time')
+                ->label('Waktu Datang')
+                ->formatStateUsing(fn ($state) => $state ?? ''),
+
+            Tables\Columns\TextColumn::make('end_time')
+                ->label('Waktu Pulang')
+                ->formatStateUsing(fn ($state) => $state ?? ''),
+
+            Tables\Columns\TextColumn::make('updated_at')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+
+            Tables\Columns\TextColumn::make('deleted_at')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+        ];
+
+        // Tambahkan kolom foto secara kondisional
+        if ($isSuperAdmin) {
+            // Untuk Super Admin, tampilkan kolom foto selalu
+            $photoColumns = [
+                 Tables\Columns\ImageColumn::make('start_attendance_photo')
                     ->label('Foto Datang')
                     ->circular()
                     ->placeholder(''),
@@ -203,36 +257,42 @@ class AttendanceResource extends Resource
                     ->label('Foto Pulang')
                     ->circular()
                     ->placeholder(''),
+            ];
+            $columns = array_merge($columns, $photoColumns);
 
-                Tables\Columns\TextColumn::make('start_time')
-                    ->label('Waktu Datang')
-                    ->formatStateUsing(fn ($state) => $state ?? ''),
+        } else {
+            // Untuk user non-Super Admin, tampilkan foto hanya jika ada DAN kamera user diaktifkan
+             // Kita akan menggunakan TextColumn dan memformatnya untuk menampilkan Image jika kondisi terpenuhi
+             // Ini untuk menghindari isu dengan ImageColumn dan visible/formatStateUsing yang mengakses relasi
+            $photoColumns = [
+                Tables\Columns\TextColumn::make('start_attendance_photo')
+                    ->label('Foto Datang')
+                    ->formatStateUsing(fn (?string $state, Attendance $record): string => 
+                        $record->user !== null && !empty($state) && $record->user->is_camera_enabled 
+                            ? '<img src="' . asset('storage/' . $state) . '" class="filament-tables-columns-image-column h-10 w-10 shrink-0 rounded-full object-cover" />' 
+                            : '-'
+                    )
+                    ->html(),
 
-                Tables\Columns\TextColumn::make('end_time')
-                    ->label('Waktu Pulang')
-                    ->formatStateUsing(fn ($state) => $state ?? ''),
+                Tables\Columns\TextColumn::make('end_attendance_photo')
+                    ->label('Foto Pulang')
+                     ->formatStateUsing(fn (?string $state, Attendance $record): string => 
+                        $record->user !== null && !empty($state) && $record->user->is_camera_enabled 
+                            ? '<img src="' . asset('storage/' . $state) . '" class="filament-tables-columns-image-column h-10 w-10 shrink-0 rounded-full object-cover" />' 
+                            : '-'
+                    )
+                     ->html(),
+            ];
+             // Sisipkan kolom foto setelah kolom created_at (atau sesuaikan posisinya sesuai keinginan)
+             $columns = array_merge(
+                 array_slice($columns, 0, 2),
+                 $photoColumns,
+                 array_slice($columns, 2)
+             );
+        }
 
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                Tables\Columns\TextColumn::make('deleted_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+        return $table->columns($columns)
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array
@@ -246,14 +306,24 @@ class AttendanceResource extends Resource
     {
         return [
             'index' => Pages\ListAttendances::route('/'),
-            'create' => Pages\CreateAttendance::route('/create'),
+            // 'create' => Pages\CreateAttendance::route('/create'),
             'edit' => Pages\EditAttendance::route('/{record}/edit'),
         ];
     }
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['schedule.shift']);
+        $query = parent::getEloquentQuery()->with(['schedule.shift', 'user']);
+
+        $user = Auth::user();
+        $isSuperAdmin = $user?->hasRole('super_admin');
+
+        // Jika user bukan super admin, filter data hanya untuk user yang sedang login
+        if (!$isSuperAdmin) {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query;
     }
 
 }

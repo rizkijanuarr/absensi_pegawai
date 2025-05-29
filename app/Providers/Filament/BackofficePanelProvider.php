@@ -17,6 +17,15 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Njxqlus\FilamentProgressbar\FilamentProgressbarPlugin;
+use App\Filament\Pages\Auth\Register;
+use App\Filament\Widgets\AttendanceDashboardOverview;
+use App\Filament\Widgets\UsersAttendedTodayTable;
+use App\Filament\Widgets\AdvancedStatsOverviewWidget;
+use App\Filament\Widgets\AdvancedAttendanceLineChart;
+use App\Filament\Widgets\AdvancedTableWidget;
+use Awcodes\FilamentGravatar\GravatarPlugin;
+use Awcodes\FilamentGravatar\GravatarProvider;
 
 class BackofficePanelProvider extends PanelProvider
 {
@@ -25,11 +34,13 @@ class BackofficePanelProvider extends PanelProvider
         return $panel
             ->default()
             ->navigationGroups([
-                'Presensi',
-                'Pengaturan',
+                'Manajamen Presensi',
+                'Master Data',
+                'Manajamen User',
             ])
             ->id('backoffice')
             ->path('backoffice')
+            ->registration(Register::class)
             ->login()
             ->colors([
                 'primary' => Color::Blue,
@@ -37,7 +48,7 @@ class BackofficePanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                \App\Filament\Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->assets([
@@ -47,7 +58,11 @@ class BackofficePanelProvider extends PanelProvider
                 \Filament\Support\Assets\Css::make('custom-maps', asset('css/custom-maps.css')),
                 \Filament\Support\Assets\Js::make('custom-maps', asset('js/custom-maps.js')),
             ])
+            ->defaultAvatarProvider(GravatarProvider::class)
             ->widgets([
+                AdvancedStatsOverviewWidget::class,
+                AdvancedAttendanceLineChart::class,
+                AdvancedTableWidget::class,
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
             ])
@@ -67,6 +82,10 @@ class BackofficePanelProvider extends PanelProvider
             ])
             ->plugins([
                 \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),
+                FilamentProgressbarPlugin::make()->color('#fbc03a'),
+                GravatarPlugin::make()
+                    ->size(200)
+                    ->rating('pg'),
             ]);
     }
 }

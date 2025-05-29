@@ -24,7 +24,7 @@ class ScheduleResource extends Resource
 
     use \App\Traits\HasNavigationBadge;
 
-    protected static ?string $navigationGroup = 'Presensi';
+    protected static ?string $navigationGroup = 'Manajamen Presensi';
 
     public static function form(Form $form): Form
     {
@@ -32,19 +32,23 @@ class ScheduleResource extends Resource
             ->schema([
                 Forms\Components\Grid::make(12) 
                     ->schema([
-                        Forms\Components\Section::make('Schedule')
+                        Forms\Components\Section::make('💡 Schedule Pegawai')
                             ->schema([
                                 Forms\Components\Select::make('user_id')
+                                    ->label('Nama Pegawai')
                                     ->relationship('user', 'name')
                                     ->searchable()
                                     ->required(),
                                 Forms\Components\Select::make('shift_id')
+                                    ->label('Shift')
                                     ->relationship('shift', 'name')
                                     ->required(),
                                 Forms\Components\Select::make('office_id')
+                                    ->label('Kantor')
                                     ->relationship('office', 'name')
                                     ->required(),
                                 Forms\Components\Toggle::make('is_wfa')
+                                    ->label('Diperbolehkan Absensi Diluar Radius Kantor?')
                             ])
                             ->columnSpanFull(),
                     ]),
@@ -54,6 +58,7 @@ class ScheduleResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->modifyQueryUsing(function (Builder $query) {
                 $is_super_admin = Auth::user()->hasRole('super_admin');
 
@@ -90,7 +95,18 @@ class ScheduleResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->color('gray')
+                    ->button()
+                    ->icon('heroicon-o-eye'),
+                Tables\Actions\EditAction::make()
+                    ->color('primary')
+                    ->button()
+                    ->icon('heroicon-o-pencil-square'),
+                Tables\Actions\DeleteAction::make()
+                    ->color('danger')
+                    ->button()
+                    ->icon('heroicon-o-trash'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

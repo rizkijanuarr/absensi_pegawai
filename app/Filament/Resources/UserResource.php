@@ -17,6 +17,8 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Grid;
 
 class UserResource extends Resource
 {
@@ -28,50 +30,69 @@ class UserResource extends Resource
 
     use \App\Traits\HasNavigationBadge;
 
-    protected static ?string $navigationGroup = 'Pengaturan';
+    protected static ?string $navigationGroup = 'Manajamen User';
 
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Group::make()
+            Forms\Components\Section::make('💡 Data Pegawai')
                 ->schema([
-                    // Bagian kiri: Informasi user
-                    Forms\Components\Section::make('User')
+                    Forms\Components\FileUpload::make('image')
+                        ->image()
+                        ->directory('photos')
+                        ->visibility('public')
+                        ->label('Profil Pegawai')
+                        ->required()
+                        ->columnSpanFull(),
+
+                    Forms\Components\Grid::make(2)
                         ->schema([
                             Forms\Components\TextInput::make('name')
                                 ->required()
+                                ->label('Nama Pegawai')
                                 ->maxLength(255),
 
                             Forms\Components\TextInput::make('email')
                                 ->email()
                                 ->required()
+                                ->label('Email Pegawai')
                                 ->maxLength(255),
+                            
+                                Forms\Components\Grid::make(2)
+                                ->schema([
+                                    Forms\Components\TextInput::make('password')
+                                        ->password()
+                                        ->label('Password')
+                                        ->dehydrateStateUsing(fn ($state) => bcrypt($state))
+                                        ->dehydrated(fn ($state) => filled($state))
+                                        ->required(fn (string $context): bool => $context === 'create')
+                                        ->live(1000)
+                                        ->revealable(),
 
-                            Forms\Components\Select::make('roles')
-                                ->relationship('roles', 'name')
-                                ->preload()
-                                ->searchable(),
-                            Forms\Components\FileUpload::make('image')
-                                ->image()
-                        ])
-                        ->columnSpan(2),
+                                    Forms\Components\TextInput::make('passwordConfirmation')
+                                        ->password()
+                                        ->label('Konfirmasi Password')
+                                        ->dehydrated(false)
+                                        ->required()
+                                        ->revealable()
+                                        ->hidden(fn (Forms\Get $get) => $get('password') == null),
+                                    ])->columnSpanFull(),
 
-                    // Bagian kanan: Pengaturan akun
-                    Forms\Components\Section::make('Settings')
-                        ->schema([
-                            Forms\Components\DateTimePicker::make('email_verified_at'),
-
-                            Forms\Components\TextInput::make('password')
-                                ->password()
-                                ->maxLength(255)
-                                ->dehydrateStateUsing(fn ($state) => Hash::make($state))
-                                ->dehydrated(fn ($state) => filled($state))
-                                ->required(fn (string $context): bool => $context === 'create'),
-                        ])
-                        ->columnSpan(1),
-                ])
-                ->columns(3) // Total 3 kolom: 2/3 kiri dan 1/3 kanan
-                ->columnSpanFull(),
+                                Forms\Components\Select::make('roles')
+                                        ->relationship('roles', 'name')
+                                        ->label('Hak Akses')
+                                        ->required()
+                                        ->multiple()
+                                        ->preload()
+                                        ->searchable()
+                                        ->columnSpanFull(),
+                            
+                                Forms\Components\Toggle::make('is_camera_enabled')
+                                    ->label('Aktifkan Kamera untuk Presensi ?')
+                                    ->required()
+                                    ->columnSpanFull(),
+                        ]),  
+                ])->columns(2),
         ]);
     }
 
@@ -79,16 +100,23 @@ class UserResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\ImageColumn::make('image')
+                    ->label('Profil')
                     ->circular(),
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nama')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
+                    ->label('Email')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('roles.name')
+                    ->label('Hak Akses')
                     ->badge()
                     ->searchable(),
+                Tables\Columns\BooleanColumn::make('is_camera_enabled')
+                    ->label('Kamera Aktif'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -102,7 +130,18 @@ class UserResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->color('gray')
+                    ->button()
+                    ->icon('heroicon-o-eye'),
+                Tables\Actions\EditAction::make()
+                    ->color('primary')
+                    ->button()
+                    ->icon('heroicon-o-pencil-square'),
+                Tables\Actions\DeleteAction::make()
+                    ->color('danger')
+                    ->button()
+                    ->icon('heroicon-o-trash'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

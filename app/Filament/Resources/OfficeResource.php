@@ -14,6 +14,7 @@ use Humaidem\FilamentMapPicker\Fields\OSMMap;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Cheesegrits\FilamentGoogleMaps\Fields\Map;
+use Afsakar\LeafletMapPicker\LeafletMapPicker;
 
 class OfficeResource extends Resource
 {
@@ -25,7 +26,7 @@ class OfficeResource extends Resource
 
     use \App\Traits\HasNavigationBadge;
 
-    protected static ?string $navigationGroup = 'Pengaturan';
+    protected static ?string $navigationGroup = 'Master Data';
 
     public static function form(Form $form): Form
     {
@@ -34,17 +35,52 @@ class OfficeResource extends Resource
                 Forms\Components\Group::make()
                     ->schema([
                         // Section kiri - Map dan koordinat
-                        Forms\Components\Section::make('Location')
+                        Forms\Components\Section::make('💡 Lokasi Kantor')
                             ->schema([
-                                Forms\Components\TextInput::make('name')
+                                Forms\Components\Group::make()
+                                    ->schema([
+                                        Forms\Components\TextInput::make('name')
+                                            ->label('Nama Kantor')
+                                            ->required()
+                                            ->maxLength(255),
+                                        
+                                        Forms\Components\TextInput::make('radius')
+                                            ->label('Radius Kantor')
+                                            ->required()
+                                            ->numeric()
+                                            ->suffix('m')
+                                            ->helperText('Radius coverage area in meters'),
+                                    ])
+                                    ->columns(2), // Membuat name dan radius bersebelahan
+
+                                LeafletMapPicker::make('location')
+                                    ->label('Lokasi Kantor')
+                                    ->height('300px')
                                     ->required()
-                                    ->maxLength(255),
-                                
-                                OSMMap::make('location')
-                                    ->label('Location')
-                                    ->showMarker()
-                                    ->draggable()
                                     ->dehydrated(false)
+                                    ->defaultLocation([-7.257055247119025, 112.7564673120454]) 
+                                    ->defaultZoom(12)
+                                    ->draggable()
+                                    ->clickable()
+                                    ->myLocationButtonLabel('My Location')
+                                    ->tileProvider('google')
+                                    ->customTiles([
+                                        'mapbox' => [
+                                            'url' => 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
+                                            'options' => [
+                                                'attribution' => '&copy; <a href="https://www.mapbox.com/">Mapbox</a>',
+                                                'id' => 'mapbox/streets-v11',
+                                                'maxZoom' => 19,
+                                                'accessToken' => 'pk.eyJ1Ijoicml6a2kxIiwiYSI6ImNtYjZobTV2OTAwdGEycnNneW40bnl1NDgifQ.ERemFCNO0wv2gwRjFoppqg', // Ganti dengan token yang valid
+                                            ]
+                                        ]
+                                    ])
+                                    ->customMarker([
+                                        'iconUrl' => asset('pin.png'),
+                                        'iconSize' => [38, 38],
+                                        'iconAnchor' => [19, 38],
+                                        'popupAnchor' => [0, -38]
+                                    ])
                                     ->afterStateHydrated(function (Forms\Set $set, $state, $record) {
                                         if ($record && $record->latitude && $record->longitude) {
                                             $set('location', [
@@ -58,36 +94,19 @@ class OfficeResource extends Resource
                                             $set('latitude', $state['lat']);
                                             $set('longitude', $state['lng']);
                                         }
-                                    })
-                                    ->tilesUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-                                    ->extraAttributes([
-                                        'class' => 'custom-styled-map',
-                                    ]),
-                                
-                                // Latitude dan Longitude bersebelahan
-                                Forms\Components\Group::make()
-                                    ->schema([
-                                        Forms\Components\TextInput::make('latitude')
-                                            ->required()
-                                            ->numeric()
-                                            ->readOnly(),
-                                        Forms\Components\TextInput::make('longitude')
-                                            ->required()
-                                            ->numeric()
-                                            ->readOnly(), 
-                                    ])
-                                    ->columns(2), // Membuat latitude dan longitude bersebelahan
+                                    }),
                             ])
                             ->columnSpan(2), // Section kiri mengambil 2/3 lebar
 
-                        // Section kanan - Radius
-                        Forms\Components\Section::make('Settings')
+                        // Section kanan - Latitude dan Longitude
+                        Forms\Components\Section::make('💡 Koordinat')
                             ->schema([
-                                Forms\Components\TextInput::make('radius')
-                                    ->required()
+                                Forms\Components\TextInput::make('latitude')
                                     ->numeric()
-                                    ->suffix('m')
-                                    ->helperText('Radius coverage area in meters'),
+                                    ->readOnly(),
+                                Forms\Components\TextInput::make('longitude')
+                                    ->numeric()
+                                    ->readOnly(), 
                             ])
                             ->columnSpan(1), // Section kanan mengambil 1/3 lebar
                     ])
@@ -96,19 +115,25 @@ class OfficeResource extends Resource
             ]);
     }
 
+
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nama Kantor')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('latitude')
+                    ->label('Latitude')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('longitude')
+                    ->label('Longitude')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('radius')
+                    ->label('Radius')
                     ->numeric()
                     ->suffix(' m')
                     ->sortable(),
@@ -129,7 +154,18 @@ class OfficeResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->color('gray')
+                    ->button()
+                    ->icon('heroicon-o-eye'),
+                Tables\Actions\EditAction::make()
+                    ->color('primary')
+                    ->button()
+                    ->icon('heroicon-o-pencil-square'),
+                Tables\Actions\DeleteAction::make()
+                    ->color('danger')
+                    ->button()
+                    ->icon('heroicon-o-trash'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
