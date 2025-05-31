@@ -24,13 +24,6 @@ class Attendance extends Model
     const RETURN_PSW_2 = 'psw_2';
     const RETURN_NOT_PRESENT = 'not_present';
 
-    // Konstanta untuk overall status
-    const OVERALL_PERFECT = 'perfect';
-    const OVERALL_OVERDUE_ONLY = 'overdue_only';
-    const OVERALL_RETURN_ONLY = 'return_only';
-    const OVERALL_RED_FLAG = 'red_flag';
-    const OVERALL_ABSENT = 'absent';
-
     protected $fillable = [
         'user_id',
         'schedule_latitude',
@@ -49,7 +42,7 @@ class Attendance extends Model
         'return',
         'overdue_minutes',
         'return_minutes',
-        'overall_status',
+        'work_duration',
     ];
 
     protected $casts = [
@@ -59,10 +52,6 @@ class Attendance extends Model
         'start_longitude' => 'double',
         'end_latitude' => 'double',
         'end_longitude' => 'double',
-        'schedule_start_time' => 'datetime',
-        'schedule_end_time' => 'datetime',
-        'start_time' => 'datetime',
-        'end_time' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -90,10 +79,10 @@ class Attendance extends Model
     public function getOverdueStatusLabelAttribute(): string
     {
         return match($this->overdue) {
-            self::OVERDUE_ON_TIME => 'Tepat Waktu',
-            self::OVERDUE_TL_1 => 'Terlambat 1-60 Menit',
-            self::OVERDUE_TL_2 => 'Terlambat > 60 Menit',
-            self::OVERDUE_NOT_PRESENT => 'Tidak Hadir',
+            self::OVERDUE_ON_TIME => 'TW',
+            self::OVERDUE_TL_1 => 'TL 1',
+            self::OVERDUE_TL_2 => 'TL 2',
+            self::OVERDUE_NOT_PRESENT => 'TH',
             default => 'Belum Presensi'
         };
     }
@@ -102,23 +91,10 @@ class Attendance extends Model
     public function getReturnStatusLabelAttribute(): string
     {
         return match($this->return) {
-            self::RETURN_ON_TIME => 'Tepat Waktu',
-            self::RETURN_PSW_1 => 'Pulang Awal 1-30 Menit',
-            self::RETURN_PSW_2 => 'Pulang Awal 31-60 Menit',
-            self::RETURN_NOT_PRESENT => 'Tidak Hadir',
-            default => 'Belum Presensi'
-        };
-    }
-
-    // Method untuk mendapatkan label overall status
-    public function getOverallStatusLabelAttribute(): string
-    {
-        return match($this->overall_status) {
-            self::OVERALL_PERFECT => 'Sempurna',
-            self::OVERALL_OVERDUE_ONLY => 'Hanya Terlambat',
-            self::OVERALL_RETURN_ONLY => 'Hanya Pulang Awal',
-            self::OVERALL_RED_FLAG => 'Terlambat & Pulang Awal',
-            self::OVERALL_ABSENT => 'Tidak Hadir',
+            self::RETURN_ON_TIME => 'TW',
+            self::RETURN_PSW_1 => 'PSW 1',
+            self::RETURN_PSW_2 => 'PSW 2',
+            self::RETURN_NOT_PRESENT => 'TH',
             default => 'Belum Presensi'
         };
     }
@@ -147,16 +123,19 @@ class Attendance extends Model
         };
     }
 
-    // Method untuk mendapatkan warna badge overall status
-    public function getOverallStatusColorAttribute(): string
+    // Method untuk mengecek apakah presensi hari ini sudah ada
+    public static function hasTodayAttendance(int $userId): bool
     {
-        return match($this->overall_status) {
-            self::OVERALL_PERFECT => 'success',
-            self::OVERALL_OVERDUE_ONLY => 'warning',
-            self::OVERALL_RETURN_ONLY => 'warning',
-            self::OVERALL_RED_FLAG => 'danger',
-            self::OVERALL_ABSENT => 'danger',
-            default => 'secondary'
-        };
+        return self::where('user_id', $userId)
+            ->whereDate('created_at', today())
+            ->exists();
+    }
+
+    // Method untuk mendapatkan presensi hari ini
+    public static function getTodayAttendance(int $userId): ?self
+    {
+        return self::where('user_id', $userId)
+            ->whereDate('created_at', today())
+            ->first();
     }
 }

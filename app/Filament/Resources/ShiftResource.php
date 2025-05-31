@@ -12,7 +12,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use HusamTariq\FilamentTimePicker\Forms\Components\TimePickerField;
 
 class ShiftResource extends Resource
 {
@@ -32,8 +31,7 @@ class ShiftResource extends Resource
             ->schema([
                 Forms\Components\Grid::make(12)
                 ->schema([
-                    Forms\Components\Section::make('Shift')
-                        ->description('💡 Informasi Waktu AM 00.00 - 11.59 | Waktu PM 12.00 - 23.59')
+                    Forms\Components\Section::make('💡 Shift')
                         ->schema([
                             Forms\Components\TextInput::make('name')
                                 ->label('Nama Shift')
@@ -43,16 +41,24 @@ class ShiftResource extends Resource
 
                             Forms\Components\Grid::make(2)
                                 ->schema([
-                                    TimePickerField::make('start_time')
-                                        ->label('Shift Mulai Bekerja')
-                                        ->okLabel('Konfirmasi')
-                                        ->cancelLabel('Batal')
+                                    // Forms\Components\TimePicker::make('start_time')
+                                    //     ->label('Shift Mulai Bekerja')
+                                    //     ->suffixIconColor('success'), 
+                                    Forms\Components\TimePicker::make('start_time')
+                                        ->label('Time')
+                                        ->displayFormat('H:i')
+                                        ->native(false)
+                                        ->seconds(false)
                                         ->required(),
-                                    TimePickerField::make('end_time')
-                                        ->label('Shift Akhir Bekerja')
-                                        ->okLabel('Konfirmasi')
-                                        ->cancelLabel('Batal')
+                                    Forms\Components\TimePicker::make('end_time')
+                                        ->label('Time')
+                                        ->displayFormat('H:i')
+                                        ->native(false)
+                                        ->seconds(false)
                                         ->required(),
+                                    // Forms\Components\TimePicker::make('end_time')
+                                    //     ->label('Shift Akhir Bekerja')
+                                    //     ->suffixIconColor('danger'), 
                                 ]),
                         ]),
                 ])

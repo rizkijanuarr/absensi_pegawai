@@ -15,13 +15,9 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Humaidem\FilamentMapPicker\Fields\OSMMap;
 use Auth;
 use Afsakar\LeafletMapPicker\LeafletMapPicker;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Notification;
 
-// TODO LIST!!!
-/*  
-    1. EDIT DI REKAP ATTENDANCE DI SUPER ADMIN ENABLE
-    2. DI HALAMAN PRESENSI BISA MELAKUKAN ENABLE DAN DISABLE KAMERANYA DILAKUKAN DI SUPER ADMIN 
-    3. FITUR OFFICE LATITUDE & LONGITUDE BISA DI ISI KEMUDIAN SEARCH
-*/
 
 class AttendanceResource extends Resource
 {
@@ -39,9 +35,7 @@ class AttendanceResource extends Resource
     {
         return $form
             ->schema([
-                // Section 1: Informasi Pegawai
-                Forms\Components\Section::make('Informasi Pegawai')
-                    ->description('💡 Informasi Waktu AM 00.00 - 11.59 | Waktu PM 12.00 - 23.59')
+                Forms\Components\Section::make('💡 Informasi Pegawai')
                     ->schema([
                         Forms\Components\TextInput::make('user_id')
                             ->label('Nama Pegawai')
@@ -58,73 +52,58 @@ class AttendanceResource extends Resource
                                     ->disabled(),
                                 Forms\Components\TimePicker::make('start_time')
                                     ->label('Waktu jam datang')
-                                    ->suffixIconColor('success'), 
+                                    ->displayFormat('H:i')
+                                    ->native(false)
+                                    ->seconds(false)
+                                    ->required(),
                                 Forms\Components\TimePicker::make('end_time')
                                     ->label('Waktu jam pulang')
-                                    ->suffixIconColor('danger'), 
-                            ])
-                            ->columns(2),
-                    ])
-                    ->columnSpanFull(),
+                                    ->displayFormat('H:i')
+                                    ->native(false)
+                                    ->seconds(false)
+                                    ->required(),
 
-                // Section 2: Status Presensi
-                Forms\Components\Section::make('Status Presensi')
-                    ->schema([
-                        Forms\Components\Group::make()
-                            ->schema([
                                 Forms\Components\Select::make('overdue')
                                     ->label('Status Datang')
                                     ->options([
-                                        'on_time' => 'Tepat Waktu',
-                                        'tl_1' => 'Terlambat 1-60 Menit',
-                                        'tl_2' => 'Terlambat > 60 Menit',
-                                        'not_present' => 'Tidak Hadir',
+                                        Attendance::OVERDUE_ON_TIME => 'TW',
+                                        Attendance::OVERDUE_TL_1 => 'TL 1',
+                                        Attendance::OVERDUE_TL_2 => 'TL 2',
+                                        Attendance::OVERDUE_NOT_PRESENT => 'TH',
                                     ])
-                                    ->default('on_time')
-                                    ->required(),
+                                    ->default(Attendance::OVERDUE_ON_TIME),
 
                                 Forms\Components\TextInput::make('overdue_minutes')
                                     ->label('Keterlambatan (Menit)')
                                     ->numeric()
-                                    ->default(0)
-                                    ->required(),
+                                    ->default(0),
 
                                 Forms\Components\Select::make('return')
                                     ->label('Status Pulang')
                                     ->options([
-                                        'on_time' => 'Tepat Waktu',
-                                        'psw_1' => 'Pulang Awal 1-30 Menit',
-                                        'psw_2' => 'Pulang Awal 31-60 Menit',
-                                        'not_present' => 'Tidak Hadir',
+                                        Attendance::RETURN_ON_TIME => 'TW',
+                                        Attendance::RETURN_PSW_1 => 'PSW 1',
+                                        Attendance::RETURN_PSW_2 => 'PSW 2',
+                                        Attendance::RETURN_NOT_PRESENT => 'TH',
                                     ])
-                                    ->default('on_time')
-                                    ->required(),
+                                    ->default(Attendance::RETURN_ON_TIME),
 
                                 Forms\Components\TextInput::make('return_minutes')
                                     ->label('Pulang Awal (Menit)')
                                     ->numeric()
-                                    ->default(0)
-                                    ->required(),
+                                    ->default(0),
+                                Forms\Components\TextInput::make('work_duration')
+                                    ->label('Durasi Kerja (Menit)')
+                                    ->numeric()
+                                    ->default(0),
 
-                                Forms\Components\Select::make('overall_status')
-                                    ->label('Status Keseluruhan')
-                                    ->options([
-                                        'perfect' => 'Sempurna',
-                                        'overdue_only' => 'Hanya Terlambat',
-                                        'return_only' => 'Hanya Pulang Awal',
-                                        'red_flag' => 'Terlambat & Pulang Awal',
-                                        'absent' => 'Tidak Hadir',
-                                    ])
-                                    ->required(),
                             ])
                             ->columns(2),
                     ])
                     ->columnSpanFull(),
 
-                // Section 2: Check In & Check Out Location (Side by Side)
                 Forms\Components\Group::make()
                     ->schema([
-                        // Check In Location (Kiri)
                         Forms\Components\Section::make('Check In Location')
                             ->schema([
                                 LeafletMapPicker::make('start_location')
@@ -149,7 +128,7 @@ class AttendanceResource extends Resource
                                                 'attribution' => '&copy; <a href="https://www.mapbox.com/">Mapbox</a>',
                                                 'id' => 'mapbox/streets-v11',
                                                 'maxZoom' => 19,
-                                                'accessToken' => 'pk.eyJ1Ijoicml6a2kxIiwiYSI6ImNtYjZobTV2OTAwdGEycnNneW40bnl1NDgifQ.ERemFCNO0wv2gwRjFoppqg', // Ganti dengan token yang valid
+                                                'accessToken' => 'pk.eyJ1Ijoicmlza2kxIiwiYSI6ImNtYjZobTV2OTAwdGEycnNneW40bnl1NDgifQ.ERemFCNO0wv2gwRjFoppqg',
                                             ]
                                         ]
                                     ])
@@ -191,7 +170,6 @@ class AttendanceResource extends Resource
                             ])
                             ->columnSpan(1),
 
-                        // Check Out Location (Kanan)
                         Forms\Components\Section::make('Check Out Location')
                             ->schema([
                                 LeafletMapPicker::make('end_location')
@@ -216,7 +194,7 @@ class AttendanceResource extends Resource
                                                 'attribution' => '&copy; <a href="https://www.mapbox.com/">Mapbox</a>',
                                                 'id' => 'mapbox/streets-v11',
                                                 'maxZoom' => 19,
-                                                'accessToken' => 'pk.eyJ1Ijoicml6a2kxIiwiYSI6ImNtYjZobTV2OTAwdGEycnNneW40bnl1NDgifQ.ERemFCNO0wv2gwRjFoppqg', 
+                                                'accessToken' => 'pk.eyJ1Ijoicmlza2kxIiwiYSI6ImNtYjZobTV2OTAwdGEycnNneW40bnl1NDgifQ.ERemFCNO0wv2gwRjFoppqg', 
                                             ]
                                         ]
                                     ])
@@ -266,9 +244,17 @@ class AttendanceResource extends Resource
 
     public static function table(Table $table): Table
     {
-        $isSuperAdmin = Auth::user()->hasRole('super_admin');
+        return $table
+            ->columns(self::getTableColumns())
+            ->filters(self::getTableFilters())
+            ->actions(self::getTableActions())
+            ->bulkActions(self::getTableBulkActions())
+            ->defaultSort('created_at', 'desc');
+    }
 
-        $columns = [
+    protected static function getTableColumns(): array
+    {
+        return [
             Tables\Columns\TextColumn::make('user.name')
                 ->label('Pegawai')
                 ->searchable()
@@ -289,26 +275,40 @@ class AttendanceResource extends Resource
 
             Tables\Columns\BadgeColumn::make('overdue')
                 ->label('Status Datang')
+                ->sortable()
+                ->badge()
                 ->formatStateUsing(fn ($record) => $record->overdue_status_label)
                 ->color(fn ($record) => $record->overdue_status_color),
 
             Tables\Columns\TextColumn::make('overdue_minutes')
                 ->label('Keterlambatan (Menit)')
-                ->formatStateUsing(fn ($state) => $state ? "{$state} menit" : '-'),
+                ->sortable()
+                ->formatStateUsing(fn ($state, $record) => self::formatMinutes($state, $record, 'overdue')),
 
             Tables\Columns\BadgeColumn::make('return')
                 ->label('Status Pulang')
+                ->sortable()
+                ->badge()
                 ->formatStateUsing(fn ($record) => $record->return_status_label)
                 ->color(fn ($record) => $record->return_status_color),
 
             Tables\Columns\TextColumn::make('return_minutes')
                 ->label('Pulang Awal (Menit)')
-                ->formatStateUsing(fn ($state) => $state ? "{$state} menit" : '-'),
+                ->sortable()
+                ->formatStateUsing(fn ($state, $record) => self::formatMinutes($state, $record, 'return')),
+            
+            Tables\Columns\TextColumn::make('work_duration')
+                ->label('Durasi Kerja (Menit)')
+                ->sortable()
+                ->formatStateUsing(fn ($state, $record) => self::formatMinutes($state, $record, 'work_duration')),
+            
+            Tables\Columns\ImageColumn::make('start_attendance_photo')
+                ->label('Foto Datang')
+                ->circular(),
 
-            Tables\Columns\BadgeColumn::make('overall_status')
-                ->label('Status Keseluruhan')
-                ->formatStateUsing(fn ($record) => $record->overall_status_label)
-                ->color(fn ($record) => $record->overall_status_color),
+            Tables\Columns\ImageColumn::make('end_attendance_photo')
+                ->label('Foto Pulang')
+                ->circular(),
 
             Tables\Columns\TextColumn::make('updated_at')
                 ->dateTime()
@@ -320,70 +320,157 @@ class AttendanceResource extends Resource
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
         ];
+    }
 
-        // Tambahkan kolom foto secara kondisional
-        if ($isSuperAdmin) {
-            // Untuk Super Admin, tampilkan kolom foto selalu
-            $photoColumns = [
-                 Tables\Columns\ImageColumn::make('start_attendance_photo')
-                    ->label('Foto Datang')
-                    ->circular()
-                    ->placeholder(''),
+    protected static function getTableFilters(): array
+    {
+        $filters = [
+            Tables\Filters\SelectFilter::make('overdue')
+                ->label('Status Datang')
+                ->options([
+                    Attendance::OVERDUE_ON_TIME => 'TW',
+                    Attendance::OVERDUE_TL_1 => 'TL 1',
+                    Attendance::OVERDUE_TL_2 => 'TL 2',
+                    Attendance::OVERDUE_NOT_PRESENT => 'TH',
+                ]),
+            Tables\Filters\SelectFilter::make('return')
+                ->label('Status Pulang')
+                ->options([
+                    Attendance::RETURN_ON_TIME => 'TW',
+                    Attendance::RETURN_PSW_1 => 'PSW 1',
+                    Attendance::RETURN_PSW_2 => 'PSW 2',
+                    Attendance::RETURN_NOT_PRESENT => 'TH',
+                ]),
+            Tables\Filters\SelectFilter::make('created_at')
+                ->label('Periode Waktu')
+                ->options([
+                    'today' => 'Hari ini',
+                    'yesterday' => 'Kemarin',
+                    'last_week' => 'Minggu lalu',
+                    'last_month' => 'Bulan lalu',
+                    'three_months' => '3 bulan terakhir',
+                    'six_months' => '6 bulan terakhir',
+                    'this_year' => 'Tahun ini',
+                ])
+                ->query(fn (Builder $query, array $data): Builder => self::handleDateFilter($query, $data)),
+        ];
 
-                Tables\Columns\ImageColumn::make('end_attendance_photo')
-                    ->label('Foto Pulang')
-                    ->circular()
-                    ->placeholder(''),
-            ];
-            $columns = array_merge($columns, $photoColumns);
-
-        } else {
-            // Untuk user non-Super Admin, tampilkan foto hanya jika ada DAN kamera user diaktifkan
-             // Kita akan menggunakan TextColumn dan memformatnya untuk menampilkan Image jika kondisi terpenuhi
-             // Ini untuk menghindari isu dengan ImageColumn dan visible/formatStateUsing yang mengakses relasi
-            $photoColumns = [
-                Tables\Columns\TextColumn::make('start_attendance_photo')
-                    ->label('Foto Datang')
-                    ->formatStateUsing(fn (?string $state, Attendance $record): string => 
-                        $record->user !== null && !empty($state) && $record->user->is_camera_enabled 
-                            ? '<img src="' . asset('storage/' . $state) . '" class="filament-tables-columns-image-column h-10 w-10 shrink-0 rounded-full object-cover" />' 
-                            : '-'
-                    )
-                    ->html(),
-
-                Tables\Columns\TextColumn::make('end_attendance_photo')
-                    ->label('Foto Pulang')
-                     ->formatStateUsing(fn (?string $state, Attendance $record): string => 
-                        $record->user !== null && !empty($state) && $record->user->is_camera_enabled 
-                            ? '<img src="' . asset('storage/' . $state) . '" class="filament-tables-columns-image-column h-10 w-10 shrink-0 rounded-full object-cover" />' 
-                            : '-'
-                    )
-                     ->html(),
-            ];
-             // Sisipkan kolom foto setelah kolom created_at (atau sesuaikan posisinya sesuai keinginan)
-             $columns = array_merge(
-                 array_slice($columns, 0, 2),
-                 $photoColumns,
-                 array_slice($columns, 2)
-             );
+        if (Auth::user()->hasRole('super_admin')) {
+            $filters[] = Tables\Filters\SelectFilter::make('user_id')
+                ->label('Pegawai')
+                ->relationship('user', 'name')
+                ->searchable()
+                ->preload();
         }
 
-        return $table->columns($columns)
-            ->defaultSort('created_at', 'desc');
+        return $filters;
+    }
+
+    protected static function getTableActions(): array
+    {
+        return [
+            Tables\Actions\ViewAction::make()
+                ->color('gray')
+                ->button()
+                ->icon('heroicon-o-eye'),
+            Tables\Actions\EditAction::make()
+                ->color('primary')
+                ->button()
+                ->icon('heroicon-o-pencil-square'),
+            Tables\Actions\DeleteAction::make()
+                ->color('danger')
+                ->button()
+                ->icon('heroicon-o-trash'),
+        ];
+    }
+
+    protected static function getTableBulkActions(): array
+    {
+        return [
+            Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\DeleteBulkAction::make(),
+            ]),
+        ];
+    }
+
+    protected static function formatMinutes($state, $record, string $type): string
+    {
+        if (!$record) {
+            return '-';
+        }
+        // Untuk kolom work_duration, tampilkan 0 menit jika 0
+        if ($type === 'work_duration') {
+            if ($state === 0 || $state === '0' || $state === null) {
+                return '0 menit';
+            }
+        } else {
+            if (!$record->{$type}) {
+                return $type === 'overdue' ? 'null' : '-';
+            }
+            if ($state === 0) {
+                return '0 menit';
+            }
+            if (!$state) {
+                return $type === 'overdue' ? 'null' : '-';
+            }
+        }
+
+        $hours = floor($state / 60);
+        $minutes = $state % 60;
+
+        if ($hours > 0) {
+            return $minutes > 0 
+                ? "{$hours} jam {$minutes} menit"
+                : "{$hours} jam";
+        }
+
+        return "{$minutes} menit";
+    }
+
+    protected static function handleDateFilter(Builder $query, array $data): Builder
+    {
+        if (empty($data['value'])) {
+            return $query;
+        }
+
+        $now = Carbon::now();
+
+        return match ($data['value']) {
+            'today' => $query->whereDate('created_at', $now->today()),
+            'yesterday' => $query->whereDate('created_at', $now->copy()->subDay()),
+            'last_week' => $query->whereBetween('created_at', [
+                $now->copy()->subWeek()->startOfWeek(),
+                $now->copy()->subWeek()->endOfWeek(),
+            ]),
+            'last_month' => $query->whereBetween('created_at', [
+                $now->copy()->subMonth()->startOfMonth(),
+                $now->copy()->subMonth()->endOfMonth(),
+            ]),
+            'three_months' => $query->whereBetween('created_at', [
+                $now->copy()->subMonths(3)->startOfDay(),
+                $now->copy()->endOfDay(),
+            ]),
+            'six_months' => $query->whereBetween('created_at', [
+                $now->copy()->subMonths(6)->startOfDay(),
+                $now->copy()->endOfDay(),
+            ]),
+            'this_year' => $query->whereBetween('created_at', [
+                $now->copy()->startOfYear(),
+                $now->copy()->endOfYear(),
+            ]),
+            default => $query,
+        };
     }
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListAttendances::route('/'),
-            // 'create' => Pages\CreateAttendance::route('/create'),
             'edit' => Pages\EditAttendance::route('/{record}/edit'),
         ];
     }
@@ -395,7 +482,6 @@ class AttendanceResource extends Resource
         $user = Auth::user();
         $isSuperAdmin = $user?->hasRole('super_admin');
 
-        // Jika user bukan super admin, filter data hanya untuk user yang sedang login
         if (!$isSuperAdmin) {
             $query->where('user_id', $user->id);
         }

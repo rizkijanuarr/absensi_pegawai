@@ -291,27 +291,35 @@
 <div class="container py-4">
     <!-- Stepper Bootstrap -->
     <div class="mb-4">
-        <div class="d-flex align-items-center mb-2">
-            <div class="me-3">
-                <div class="progress-circle position-relative" style="width:48px;height:48px;">
-                    <svg width="48" height="48">
-                        <circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" stroke-width="6"/>
-                        <circle cx="24" cy="24" r="20" fill="none" stroke="#3B82F6" stroke-width="6" stroke-dasharray="125.6" stroke-dashoffset="{{ $step == 1 ? 62.8 : 0 }}" style="transition:stroke-dashoffset 0.3s;"/>
-                    </svg>
-                    <div class="position-absolute top-50 start-50 translate-middle fw-bold">{{ $step }} / 2</div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <div class="progress-circle position-relative" style="width:48px;height:48px;">
+                        <svg width="48" height="48">
+                            <circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" stroke-width="6"/>
+                            <circle cx="24" cy="24" r="20" fill="none" stroke="#3B82F6" stroke-width="6" stroke-dasharray="125.6" stroke-dashoffset="{{ $step == 1 ? 62.8 : 0 }}" style="transition:stroke-dashoffset 0.3s;"/>
+                        </svg>
+                        <div class="position-absolute top-50 start-50 translate-middle fw-bold">{{ $step }} / 2</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="fw-bold fs-5">Presensi Pegawai</div>
+                    <div class="text-muted small">
+                        @if($step == 1 && $isCameraEnabled) Ambil Photo
+                        @elseif($step == 2)
+                            @if($currentAction == 'arrival') Tag Lokasi Datang @else Tag Lokasi Pulang @endif
+                        @else
+                            Tag Lokasi
+                        @endif
+                    </div>
                 </div>
             </div>
-            <div>
-                <div class="fw-bold fs-5">Presensi Pegawai</div>
-                <div class="text-muted small">
-                    @if($step == 1 && $isCameraEnabled) Ambil Photo
-                    @elseif($step == 2)
-                        @if($currentAction == 'arrival') Tag Lokasi Datang @else Tag Lokasi Pulang @endif
-                    @else
-                        Tag Lokasi
-                    @endif
-                </div>
-            </div>
+            <button type="button" 
+                    wire:click="markAsNotPresent" 
+                    class="btn {{ $canMarkNotPresent ? 'btn-danger' : 'btn-secondary' }}"
+                    {{ !$canMarkNotPresent ? 'disabled' : '' }}>
+                <i class="fas fa-times-circle me-1"></i> Tidak Hadir
+            </button>
         </div>
         <div class="progress" style="height:6px;">
             <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $step == 1 ? '50%' : '100%' }};"></div>
@@ -561,8 +569,12 @@
                 title: 'Presensi Berhasil!',
                 text: 'Presensi kamu sudah tercatat!',
                 confirmButtonText: 'OK',
+                allowOutsideClick: false,
                 didClose: () => {
-                    window.location.href = '/backoffice/attendances';
+                    // Add a small delay to ensure data is saved
+                    setTimeout(() => {
+                        window.location.href = '/backoffice/attendances';
+                    }, 500);
                 }
             });
         });
@@ -590,9 +602,44 @@
         // Listen for presensi completed event to show Swal and redirect
         window.addEventListener('presensi-completed', function (event) {
             Swal.fire({
-                icon: 'info', // Atau 'success' jika diinginkan
+                icon: 'info',
                 title: 'Presensi Selesai',
                 text: event.detail.message || 'Anda sudah melakukan presensi hari ini.',
+                confirmButtonText: 'OK',
+                allowOutsideClick: false,
+                didClose: () => {
+                    window.location.href = '/backoffice/attendances';
+                }
+            });
+        });
+
+        // Listen for tidak-hadir event
+        window.addEventListener('tidak-hadir', function (event) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Konfirmasi Tidak Hadir',
+                text: 'Apakah Anda yakin ingin menandai presensi sebagai tidak hadir?',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Tandai Tidak Hadir',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                allowOutsideClick: false,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Jika dikonfirmasi, panggil method confirmNotPresent di Livewire
+                    @this.confirmNotPresent();
+                }
+            });
+        });
+
+        // Listen for confirm-not-present event
+        window.addEventListener('confirm-not-present', function () {
+            // Proses tidak hadir dan tampilkan SWAL sukses
+            Swal.fire({
+                icon: 'success',
+                title: 'Presensi Ditandai Tidak Hadir',
+                text: 'Presensi Anda telah ditandai sebagai tidak hadir.',
                 confirmButtonText: 'OK',
                 allowOutsideClick: false,
                 didClose: () => {
@@ -627,41 +674,105 @@
         if (video && capturePhotoBtn) {
             async function startCamera() {
                 try {
+                    // Use ideal constraints instead of exact for better compatibility
                     stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { width: 340, height: 340, facingMode: 'user' } 
+                        video: { ideal: { width: 340, height: 340 }, facingMode: 'user' }
                     });
                     video.srcObject = stream;
+                    video.play(); // Ensure video plays
+
+                    // Optional: Wait for video to load metadata before drawing
+                    await new Promise(resolve => video.onloadedmetadata = resolve);
+
                 } catch (err) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
-                        text: 'Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.',
+                        text: 'Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.' + (err.message ? ': ' + err.message : ''),
                         confirmButtonText: 'OK'
                     });
+                     capturePhotoBtn.disabled = true; // Disable button if camera access fails
+                     capturePhotoBtn.innerHTML = '<i class="fas fa-camera"></i> Gagal Akses Kamera';
                 }
             }
             startCamera();
 
             capturePhotoBtn.addEventListener('click', async () => {
+                if (!video.srcObject) { // Check if stream is available
+                    Swal.fire({
+                         icon: 'warning',
+                         title: 'Kamera Tidak Aktif',
+                         text: 'Tidak dapat mengambil foto karena kamera tidak aktif.',
+                         confirmButtonText: 'OK'
+                    });
+                    return;
+                }
+
                 capturePhotoBtn.disabled = true;
-                capturePhotoBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sedang Memproses';
-                faceDetectionLabel.textContent = 'Sedang Memproses';
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                canvas.toBlob((blob) => {
-                    let file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
-                    let dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    input.files = dataTransfer.files;
-                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                    capturedPhoto.src = URL.createObjectURL(blob);
-                    capturedPhoto.style.display = 'block';
-                    video.style.display = 'none';
-                    capturePhotoBtn.style.display = 'none';
-                    if (stream) { stream.getTracks().forEach(track => track.stop()); }
-                }, 'image/jpeg', 0.8);
+                capturePhotoBtn.innerHTML = '<span class="loading-spinner"></span> Mengambil Foto...';
+                faceDetectionLabel.textContent = 'Mengambil Foto...';
+
+                try {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    // Add a small delay to ensure drawing is complete (optional, but can help)
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            let file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+                            let dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(file);
+                            input.files = dataTransfer.files;
+
+                            // Dispatch the change event using Livewire.dispatch for robustness
+                            // Use a separate event to signal photo taken, if 'change' is unreliable
+                            // window.dispatchEvent(new CustomEvent('photo-captured', { detail: { file: file } }));
+                            
+                            // Using wire:model requires dispatching the 'change' event on the input element
+                            input.dispatchEvent(new Event('change', { bubbles: true }));
+                            
+                            capturedPhoto.src = URL.createObjectURL(blob);
+                            capturedPhoto.style.display = 'block';
+                            video.style.display = 'none';
+                            capturePhotoBtn.style.display = 'none'; // Hide capture button
+                            
+                             // Optionally show a retake button
+                             // let retakeBtn = document.getElementById('retake-photo');
+                             // if (retakeBtn) retakeBtn.style.display = 'inline-flex';
+
+                            if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; }
+                            faceDetectionLabel.textContent = 'Foto Terambil';
+
+                            // Now wait for Livewire to process and move to step 2
+                            capturePhotoBtn.innerHTML = '<span class="loading-spinner"></span> Memproses...';
+
+                        } else {
+                             Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal Membuat Foto!',
+                                text: 'Terjadi kesalahan saat memproses gambar.',
+                                confirmButtonText: 'OK'
+                             });
+                            capturePhotoBtn.disabled = false; // Re-enable button
+                            capturePhotoBtn.innerHTML = '<i class="fas fa-camera"></i> Ambil Foto'; // Reset button text
+                            faceDetectionLabel.textContent = 'Tidak Dikenali'; // Reset label
+                        }
+                    }, 'image/jpeg', 0.8);
+
+                } catch (err) {
+                     Swal.fire({
+                         icon: 'error',
+                         title: 'Gagal Mengambil Foto!',
+                         text: 'Terjadi kesalahan saat mengambil gambar: ' + (err.message ? err.message : ''),
+                         confirmButtonText: 'OK'
+                     });
+                     capturePhotoBtn.disabled = false; // Re-enable button
+                     capturePhotoBtn.innerHTML = '<i class="fas fa-camera"></i> Ambil Foto'; // Reset button text
+                     faceDetectionLabel.textContent = 'Tidak Dikenali'; // Reset label
+                }
             });
         }
     </script>

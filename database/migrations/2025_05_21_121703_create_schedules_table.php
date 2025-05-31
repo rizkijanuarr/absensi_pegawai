@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('schedules', function (Blueprint $table) {
@@ -18,12 +15,10 @@ return new class extends Migration
             $table->foreignId('office_id')->constrained('offices')->cascadeOnDelete();
             $table->boolean('is_wfa')->default(false);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
-
-    /**
-     * Reverse the migrations.
-     */
+    
     public function down(): void
     {
         Schema::dropIfExists('schedules');

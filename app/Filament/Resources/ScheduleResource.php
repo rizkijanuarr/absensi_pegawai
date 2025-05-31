@@ -36,17 +36,26 @@ class ScheduleResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('user_id')
                                     ->label('Nama Pegawai')
-                                    ->relationship('user', 'name')
-                                    ->searchable()
-                                    ->required(),
-                                Forms\Components\Select::make('shift_id')
-                                    ->label('Shift')
-                                    ->relationship('shift', 'name')
-                                    ->required(),
-                                Forms\Components\Select::make('office_id')
-                                    ->label('Kantor')
-                                    ->relationship('office', 'name')
-                                    ->required(),
+                                    ->relationship(
+                                        'user', 'name',
+                                        fn ($query) => $query->latest()
+                                    )
+                                    ->required()
+                                    ->preload()
+                                    ->searchable(),
+
+                                Forms\Components\Group::make()
+                                    ->schema([
+                                        Forms\Components\Select::make('shift_id')
+                                        ->label('Shift')
+                                        ->relationship('shift', 'name')
+                                        ->required(),
+                                    Forms\Components\Select::make('office_id')
+                                        ->label('Kantor')
+                                        ->relationship('office', 'name')
+                                        ->required(),
+                                ])->columns(2),
+
                                 Forms\Components\Toggle::make('is_wfa')
                                     ->label('Diperbolehkan Absensi Diluar Radius Kantor?')
                             ])
