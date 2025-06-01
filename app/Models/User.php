@@ -8,12 +8,14 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
     use HasFactory;
     use Notifiable;
     use HasRoles;
+    use SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -39,12 +41,10 @@ class User extends Authenticatable
             return null;
         }
 
-        // Cek di folder photos
         if (Storage::disk('public')->exists('photos/' . $this->image)) {
             return asset('storage/photos/' . $this->image);
         }
 
-        // Cek di root folder storage
         if (Storage::disk('public')->exists($this->image)) {
             return asset('storage/' . $this->image);
         }
@@ -52,7 +52,6 @@ class User extends Authenticatable
         return null;
     }
 
-    // Relasi ke Schedule (one-to-many)
     public function schedules()
     {
         return $this->hasMany(\App\Models\Schedule::class);

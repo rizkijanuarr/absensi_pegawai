@@ -10,7 +10,8 @@ use Carbon\Carbon;
 
 class Attendance extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+    use SoftDeletes;
 
     // Konstanta untuk status presensi datang
     const OVERDUE_ON_TIME = 'on_time';

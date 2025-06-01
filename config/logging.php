@@ -54,7 +54,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', 'single')),
+            'channels' => ['single', 'register', 'presensi_logic', 'user_management', 'shift_management', 'schedule_managament', 'office_managament', 'attendance_managament'],
             'ignore_exceptions' => false,
         ],
 
@@ -125,6 +125,69 @@ return [
 
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
+        ],
+
+        'register' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/register.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+            'permission' => 0664,
+        ],
+
+        'presensi_logic' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/presensi_logic.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+            'permission' => 0664,
+        ],
+
+        'user_management' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/user_management.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+            'permission' => 0664,
+        ],
+
+        'shift_management' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/shift_management.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+            'permission' => 0664,
+        ],
+
+        'schedule_managament' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/schedule_managament.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+            'permission' => 0664,
+        ],
+
+        'office_managament' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/office_managament.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+            'permission' => 0664,
+        ],
+
+        'attendance_managament' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/attendance_managament.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+            'permission' => 0664,
         ],
 
     ],

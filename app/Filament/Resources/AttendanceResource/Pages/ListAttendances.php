@@ -9,10 +9,29 @@ use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Resources\Pages\ListRecords\Tab;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
 
 class ListAttendances extends ListRecords
 {
     protected static string $resource = AttendanceResource::class;
+
+    private function applyStatusFilter(Builder $query, ?string $status): Builder
+    {
+        if (is_null($status)) {
+            return $query;
+        }
+
+        return $query->where(function($query) use ($status) {
+            if (in_array($status, [Attendance::RETURN_PSW_1, Attendance::RETURN_PSW_2, Attendance::RETURN_NOT_PRESENT])) {
+                $query->where('return', $status);
+            } elseif (in_array($status, [Attendance::OVERDUE_ON_TIME, Attendance::OVERDUE_TL_1, Attendance::OVERDUE_TL_2, Attendance::OVERDUE_NOT_PRESENT])) {
+                $query->where('overdue', $status);
+            }
+            if ($status === Attendance::OVERDUE_NOT_PRESENT) {
+                $query->orWhere('return', Attendance::RETURN_NOT_PRESENT);
+            }
+        });
+    }
 
     public function getTabs(): array
     {
@@ -29,43 +48,15 @@ class ListAttendances extends ListRecords
         return $statuses->mapWithKeys(function ($data, $key) {
             $query = Attendance::query();
             
-            // Cek apakah user adalah super admin
-            $is_super_admin = Auth::user()->hasRole('super_admin');
-            
-            // Jika bukan super admin, filter data berdasarkan user_id
-            if (!$is_super_admin) {
+            if (!Auth::user()->hasRole('super_admin')) {
                 $query->where('user_id', Auth::user()->id);
             }
 
-            $badgeCount = is_null($data['status'])
-                ? $query->count()
-                : $query->where(function($query) use ($data) {
-                    if (in_array($data['status'], [Attendance::RETURN_PSW_1, Attendance::RETURN_PSW_2, Attendance::RETURN_NOT_PRESENT])) {
-                        $query->where('return', $data['status']);
-                    } elseif (in_array($data['status'], [Attendance::OVERDUE_ON_TIME, Attendance::OVERDUE_TL_1, Attendance::OVERDUE_TL_2, Attendance::OVERDUE_NOT_PRESENT])) {
-                         $query->where('overdue', $data['status']);
-                    }
-                    // Handle 'TH' which can be either overdue or return
-                    if ($data['status'] === Attendance::OVERDUE_NOT_PRESENT) {
-                         $query->orWhere('return', Attendance::RETURN_NOT_PRESENT);
-                    }
-                })->count();
+            $badgeCount = $this->applyStatusFilter($query->clone(), $data['status'])->count();
 
             return [$key => Tab::make($data['label'])
                 ->badge($badgeCount)
-                ->modifyQueryUsing(fn ($query) => is_null($data['status']) 
-                    ? $query 
-                    : $query->where(function($query) use ($data) {
-                        if (in_array($data['status'], [Attendance::RETURN_PSW_1, Attendance::RETURN_PSW_2, Attendance::RETURN_NOT_PRESENT])) {
-                            $query->where('return', $data['status']);
-                        } elseif (in_array($data['status'], [Attendance::OVERDUE_ON_TIME, Attendance::OVERDUE_TL_1, Attendance::OVERDUE_TL_2, Attendance::OVERDUE_NOT_PRESENT])) {
-                            $query->where('overdue', $data['status']);
-                        }
-                         // Handle 'TH' which can be either overdue or return
-                         if ($data['status'] === Attendance::OVERDUE_NOT_PRESENT) {
-                             $query->orWhere('return', Attendance::RETURN_NOT_PRESENT);
-                         }
-                    }))
+                ->modifyQueryUsing(fn ($query) => $this->applyStatusFilter($query, $data['status']))
                 ->badgeColor($data['badgeColor'])];
         })->toArray();
     }
